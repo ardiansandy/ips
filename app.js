@@ -5,7 +5,7 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbxgGw8hM2_rjKmu5Xs71Yu9bu2xaUfuZt31jTf8S1ZXg2F1PxO2RJbCh3xSH4OUte8Zpg/exec";
 
 let currentUser = null; // Menyimpan data user login
-let currentStudentsList = []; // Cache list siswa per kelas
+let currentStudentsList = []; // Cache list murid per kelas
 
 // =========================================================
 // INIT & AUTOMATIC LOGIN CHECK
@@ -51,34 +51,34 @@ async function callApi(payload) {
 // TAB SWITCHER LOGIN
 // =========================================================
 function switchLoginTab(tab) {
-  const btnSiswa = document.getElementById("tab-siswa-btn");
+  const btnMurid = document.getElementById("tab-murid-btn");
   const btnGuru = document.getElementById("tab-guru-btn");
-  const formSiswa = document.getElementById("form-siswa");
+  const formMurid = document.getElementById("form-murid");
   const formGuru = document.getElementById("form-guru");
 
-  if (tab === "siswa") {
-    btnSiswa.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all";
+  if (tab === "murid") {
+    btnMurid.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all";
     btnGuru.className = "flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent transition-all";
-    formSiswa.classList.remove("hidden");
+    formMurid.classList.remove("hidden");
     formGuru.classList.add("hidden");
   } else {
     btnGuru.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all";
-    btnSiswa.className = "flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent transition-all";
+    btnMurid.className = "flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent transition-all";
     formGuru.classList.remove("hidden");
-    formSiswa.classList.add("hidden");
+    formMurid.classList.add("hidden");
   }
 }
 
 // =========================================================
 // LOGIKA AUTHENTICATION
 // =========================================================
-async function loginSiswa() {
-  const username = document.getElementById("siswa-username").value.trim();
+async function loginMurid() {
+  const username = document.getElementById("murid-username").value.trim();
   if (!username) return alert("Masukkan username login Anda!");
 
   const res = await callApi({ action: "loginStudent", username: username });
   if (res.status === "success") {
-    currentUser = { role: "siswa", ...res.data };
+    currentUser = { role: "murid", ...res.data };
     localStorage.setItem("ips_user", JSON.stringify(currentUser));
     renderDashboard();
   } else {
@@ -119,13 +119,13 @@ function renderDashboard() {
   if (currentUser.role === "guru") {
     badge.innerText = `Guru: ${currentUser.nama}`;
     document.getElementById("view-guru").classList.remove("hidden");
-    document.getElementById("view-siswa").classList.add("hidden");
+    document.getElementById("view-murid").classList.add("hidden");
     loadDataKelasGuru();
   } else {
-    badge.innerText = `Siswa: ${currentUser.nama} (${currentUser.kelas.toUpperCase()})`;
-    document.getElementById("view-siswa").classList.remove("hidden");
+    badge.innerText = `Murid: ${currentUser.nama} (${currentUser.kelas.toUpperCase()})`;
+    document.getElementById("view-murid").classList.remove("hidden");
     document.getElementById("view-guru").classList.add("hidden");
-    loadDashboardSiswa();
+    loadDashboardMurid();
   }
 }
 
@@ -170,13 +170,13 @@ function renderAbsensiGuru(container) {
   `;
 
   if (currentStudentsList.length === 0) {
-    html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data siswa di kelas ini.</p>`;
+    html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data murid di kelas ini.</p>`;
   } else {
     currentStudentsList.forEach((s) => {
       html += `
         <div class="py-2.5 flex items-center justify-between gap-2">
           <span class="text-xs font-semibold text-slate-700 w-1/3 truncate">${s.Nama_Lengkap}</span>
-          <select id="absen-${s.ID_Siswa}" class="px-2 py-1 border rounded text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500">
+          <select id="absen-${s.ID_Murid}" class="px-2 py-1 border rounded text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500">
             <option value="Hadir" selected>Hadir</option>
             <option value="Izin">Izin</option>
             <option value="Sakit">Sakit</option>
@@ -201,8 +201,8 @@ async function simpanAbsensiGuru() {
   const kelas = document.getElementById("guru-kelas-select").value;
 
   const dataAbsensi = currentStudentsList.map((s) => {
-    const status = document.getElementById(`absen-${s.ID_Siswa}`).value;
-    return { tanggal, kelas, idSiswa: s.ID_Siswa, status };
+    const status = document.getElementById(`absen-${s.ID_Murid}`).value;
+    return { tanggal, kelas, idMurid: s.ID_Murid, status };
   });
 
   const res = await callApi({ action: "saveAttendance", dataAbsensi });
@@ -229,7 +229,7 @@ function renderInputNilaiGuru(container) {
     html += `
       <div class="py-2 flex items-center justify-between gap-2">
         <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${s.Nama_Lengkap}</span>
-        <input type="number" id="nilai-${s.ID_Siswa}" placeholder="0-100" min="0" max="100" class="w-20 px-2 py-1 border rounded text-xs text-center">
+        <input type="number" id="nilai-${s.ID_Murid}" placeholder="0-100" min="0" max="100" class="w-20 px-2 py-1 border rounded text-xs text-center">
       </div>
     `;
   });
@@ -249,12 +249,12 @@ async function simpanNilaiGuru() {
 
   const dataNilai = currentStudentsList
     .map((s) => {
-      const val = document.getElementById(`nilai-${s.ID_Siswa}`).value;
-      return val ? { idSiswa: s.ID_Siswa, kelas, kategori, nilai: Number(val) } : null;
+      const val = document.getElementById(`nilai-${s.ID_Murid}`).value;
+      return val ? { idMurid: s.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
     })
     .filter((item) => item !== null);
 
-  if (dataNilai.length === 0) return alert("Isi minimal satu nilai siswa!");
+  if (dataNilai.length === 0) return alert("Isi minimal satu nilai murid!");
 
   const res = await callApi({ action: "saveGrade", dataNilai });
   alert(res.message);
@@ -271,7 +271,7 @@ function renderInputSikapGuru(container) {
     html += `
       <div class="py-2.5 flex items-center justify-between gap-2">
         <span class="text-xs font-semibold text-slate-700">${s.Nama_Lengkap}</span>
-        <button onclick="tambahBintang('${s.ID_Siswa}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300">
+        <button onclick="tambahBintang('${s.ID_Murid}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300">
           +1 Star ★
         </button>
       </div>
@@ -282,9 +282,9 @@ function renderInputSikapGuru(container) {
   container.innerHTML = html;
 }
 
-async function tambahBintang(idSiswa) {
+async function tambahBintang(idMurid) {
   const kelas = document.getElementById("guru-kelas-select").value;
-  const res = await callApi({ action: "addStar", idSiswa, kelas, catatan: "Aktif bertanya/menjawab" });
+  const res = await callApi({ action: "addStar", idMurid, kelas, catatan: "Aktif bertanya/menjawab" });
   alert(res.message);
 }
 
@@ -340,23 +340,23 @@ async function simpanMateriGuru() {
 // =========================================================
 // MODUL SISWA
 // =========================================================
-async function loadDashboardSiswa() {
-  document.getElementById("siswa-welcome-name").innerText = currentUser.nama;
-  document.getElementById("siswa-welcome-class").innerText = `Kelas ${currentUser.kelas.toUpperCase()}`;
+async function loadDashboardMurid() {
+  document.getElementById("murid-welcome-name").innerText = currentUser.nama;
+  document.getElementById("murid-welcome-class").innerText = `Kelas ${currentUser.kelas.toUpperCase()}`;
 
-  const res = await callApi({ action: "getStudentDashboard", idSiswa: currentUser.idSiswa });
+  const res = await callApi({ action: "getStudentDashboard", idMurid: currentUser.idMurid });
   if (res.status === "success") {
     document.getElementById("stat-bintang").innerText = `${res.data.totalBintang || 0} ★`;
     document.getElementById("stat-kehadiran").innerText = `${res.data.absensi.length} Hari`;
     
     // Cache data
     currentUser.dashboardData = res.data;
-    switchSiswaTab("nilai");
+    switchMuridTab("nilai");
   }
 }
 
-function switchSiswaTab(tab) {
-  const container = document.getElementById("siswa-tab-content");
+function switchMuridTab(tab) {
+  const container = document.getElementById("murid-tab-content");
   const data = currentUser.dashboardData || { nilai: [], absensi: [] };
 
   if (tab === "nilai") {
@@ -378,13 +378,13 @@ function switchSiswaTab(tab) {
     container.innerHTML = html;
 
   } else if (tab === "materi") {
-    loadMateriSiswa(container);
+    loadMateriMurid(container);
   } else if (tab === "tugas") {
-    renderKumpulTugasSiswa(container);
+    renderKumpulTugasMurid(container);
   }
 }
 
-async function loadMateriSiswa(container) {
+async function loadMateriMurid(container) {
   const res = await callApi({ action: "getMaterials", kelas: currentUser.kelas });
   let html = `<h3 class="font-bold text-slate-700 text-sm mb-3">Daftar Modul & Video IPS</h3>`;
 
@@ -412,7 +412,7 @@ async function loadMateriSiswa(container) {
   container.innerHTML = html;
 }
 
-function renderKumpulTugasSiswa(container) {
+function renderKumpulTugasMurid(container) {
   container.innerHTML = `
     <h3 class="font-bold text-slate-700 text-sm mb-3">Kirim Tugas IPS</h3>
     <div class="space-y-3">
@@ -424,16 +424,16 @@ function renderKumpulTugasSiswa(container) {
         <label class="block text-xs font-bold text-slate-600 mb-1">Link File (Google Drive / Foto)</label>
         <input type="text" id="tugas-link" placeholder="Paste link file drive di sini..." class="w-full px-3 py-2 border rounded-lg text-xs">
       </div>
-      <button onclick="kirimTugasSiswa()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
+      <button onclick="kirimTugasMurid()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
         Kirimkan Tugas
       </button>
     </div>
   `;
 }
 
-async function kirimTugasSiswa() {
+async function kirimTugasMurid() {
   const dataTugas = {
-    idSiswa: currentUser.idSiswa,
+    idMurid: currentUser.idMurid,
     judulTugas: document.getElementById("tugas-judul").value,
     linkFileDrive: document.getElementById("tugas-link").value
   };
