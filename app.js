@@ -1,15 +1,9 @@
-// =========================================================
-// KONFIGURASI UTAMA
-// =========================================================
-// ⚠️ GANTI DENGAN URL WEB APP HASIL DEPLOY GOOGLE APPS SCRIPT
+// ⚠️ GANTI DENGAN URL WEB APP DEPLOYMENT DARI APPS SCRIPT
 const API_URL = "https://script.google.com/macros/s/AKfycbxgGw8hM2_rjKmu5Xs71Yu9bu2xaUfuZt31jTf8S1ZXg2F1PxO2RJbCh3xSH4OUte8Zpg/exec";
 
-let currentUser = null; // Menyimpan data user login
-let currentStudentsList = []; // Cache list murid per kelas
+let currentUser = null;
+let currentMuridList = [];
 
-// =========================================================
-// INIT & AUTOMATIC LOGIN CHECK
-// =========================================================
 document.addEventListener("DOMContentLoaded", () => {
   const savedUser = localStorage.getItem("ips_user");
   if (savedUser) {
@@ -18,16 +12,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Helper Loader
 function showLoading(text = "Memproses...") {
   document.getElementById("loading-text").innerText = text;
   document.getElementById("loading-overlay").classList.remove("hidden");
 }
+
 function hideLoading() {
   document.getElementById("loading-overlay").classList.add("hidden");
 }
 
-// Fetch API Helper ke Apps Script
 async function callApi(payload) {
   showLoading();
   try {
@@ -47,9 +40,6 @@ async function callApi(payload) {
   }
 }
 
-// =========================================================
-// TAB SWITCHER LOGIN
-// =========================================================
 function switchLoginTab(tab) {
   const btnMurid = document.getElementById("tab-murid-btn");
   const btnGuru = document.getElementById("tab-guru-btn");
@@ -69,14 +59,14 @@ function switchLoginTab(tab) {
   }
 }
 
-// =========================================================
-// LOGIKA AUTHENTICATION
-// =========================================================
+// LOGIN MURID: Username + Password terpisah
 async function loginMurid() {
   const username = document.getElementById("murid-username").value.trim();
-  if (!username) return alert("Masukkan username login Anda!");
+  const password = document.getElementById("murid-password").value.trim();
+  
+  if (!username || !password) return alert("Masukkan Username dan Password Anda!");
 
-  const res = await callApi({ action: "loginStudent", username: username });
+  const res = await callApi({ action: "loginMurid", username: username, password: password });
   if (res.status === "success") {
     currentUser = { role: "murid", ...res.data };
     localStorage.setItem("ips_user", JSON.stringify(currentUser));
@@ -107,9 +97,6 @@ function logout() {
   location.reload();
 }
 
-// =========================================================
-// RENDER MAIN DASHBOARD
-// =========================================================
 function renderDashboard() {
   document.getElementById("login-section").classList.add("hidden");
   document.getElementById("app-dashboard").classList.remove("hidden");
@@ -129,16 +116,14 @@ function renderDashboard() {
   }
 }
 
-// =========================================================
 // MODUL GURU
-// =========================================================
 let currentGuruTab = "absensi";
 
 async function loadDataKelasGuru() {
   const kelas = document.getElementById("guru-kelas-select").value;
-  const res = await callApi({ action: "getStudentsByClass", kelas: kelas });
+  const res = await callApi({ action: "getMuridByClass", kelas: kelas });
   if (res.status === "success") {
-    currentStudentsList = res.data;
+    currentMuridList = res.data;
     switchGuruTab(currentGuruTab);
   }
 }
@@ -158,7 +143,6 @@ function switchGuruTab(tab) {
   }
 }
 
-// 1. Tampilan Absensi Cepat Guru
 function renderAbsensiGuru(container) {
   const today = new Date().toISOString().split("T")[0];
   let html = `
@@ -169,14 +153,14 @@ function renderAbsensiGuru(container) {
     <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto mb-4">
   `;
 
-  if (currentStudentsList.length === 0) {
+  if (currentMuridList.length === 0) {
     html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data murid di kelas ini.</p>`;
   } else {
-    currentStudentsList.forEach((s) => {
+    currentMuridList.forEach((m) => {
       html += `
         <div class="py-2.5 flex items-center justify-between gap-2">
-          <span class="text-xs font-semibold text-slate-700 w-1/3 truncate">${s.Nama_Lengkap}</span>
-          <select id="absen-${s.ID_Murid}" class="px-2 py-1 border rounded text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500">
+          <span class="text-xs font-semibold text-slate-700 w-1/3 truncate">${m.Nama_Lengkap}</span>
+          <select id="absen-${m.ID_Murid}" class="px-2 py-1 border rounded text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500">
             <option value="Hadir" selected>Hadir</option>
             <option value="Izin">Izin</option>
             <option value="Sakit">Sakit</option>
@@ -200,16 +184,15 @@ async function simpanAbsensiGuru() {
   const tanggal = document.getElementById("absensi-tanggal").value;
   const kelas = document.getElementById("guru-kelas-select").value;
 
-  const dataAbsensi = currentStudentsList.map((s) => {
-    const status = document.getElementById(`absen-${s.ID_Murid}`).value;
-    return { tanggal, kelas, idMurid: s.ID_Murid, status };
+  const dataAbsensi = currentMuridList.map((m) => {
+    const status = document.getElementById(`absen-${m.ID_Murid}`).value;
+    return { tanggal, kelas, idMurid: m.ID_Murid, status };
   });
 
   const res = await callApi({ action: "saveAttendance", dataAbsensi });
   alert(res.message);
 }
 
-// 2. Tampilan Input Nilai Guru
 function renderInputNilaiGuru(container) {
   let html = `
     <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-pen-to-square text-emerald-600"></i> Input Nilai Ujian / UH</h3>
@@ -225,11 +208,11 @@ function renderInputNilaiGuru(container) {
     <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4">
   `;
 
-  currentStudentsList.forEach((s) => {
+  currentMuridList.forEach((m) => {
     html += `
       <div class="py-2 flex items-center justify-between gap-2">
-        <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${s.Nama_Lengkap}</span>
-        <input type="number" id="nilai-${s.ID_Murid}" placeholder="0-100" min="0" max="100" class="w-20 px-2 py-1 border rounded text-xs text-center">
+        <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${m.Nama_Lengkap}</span>
+        <input type="number" id="nilai-${m.ID_Murid}" placeholder="0-100" min="0" max="100" class="w-20 px-2 py-1 border rounded text-xs text-center">
       </div>
     `;
   });
@@ -247,10 +230,10 @@ async function simpanNilaiGuru() {
   const kategori = document.getElementById("kategori-nilai").value;
   const kelas = document.getElementById("guru-kelas-select").value;
 
-  const dataNilai = currentStudentsList
-    .map((s) => {
-      const val = document.getElementById(`nilai-${s.ID_Murid}`).value;
-      return val ? { idMurid: s.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
+  const dataNilai = currentMuridList
+    .map((m) => {
+      const val = document.getElementById(`nilai-${m.ID_Murid}`).value;
+      return val ? { idMurid: m.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
     })
     .filter((item) => item !== null);
 
@@ -260,18 +243,17 @@ async function simpanNilaiGuru() {
   alert(res.message);
 }
 
-// 3. Tampilan Input Bintang Sikap
 function renderInputSikapGuru(container) {
   let html = `
     <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-star text-amber-500"></i> Apresiasi Keaktifan (Bintang Sikap)</h3>
     <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto">
   `;
 
-  currentStudentsList.forEach((s) => {
+  currentMuridList.forEach((m) => {
     html += `
       <div class="py-2.5 flex items-center justify-between gap-2">
-        <span class="text-xs font-semibold text-slate-700">${s.Nama_Lengkap}</span>
-        <button onclick="tambahBintang('${s.ID_Murid}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300">
+        <span class="text-xs font-semibold text-slate-700">${m.Nama_Lengkap}</span>
+        <button onclick="tambahBintang('${m.ID_Murid}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300">
           +1 Star ★
         </button>
       </div>
@@ -288,7 +270,6 @@ async function tambahBintang(idMurid) {
   alert(res.message);
 }
 
-// 4. Upload Materi
 function renderUploadMateriGuru(container) {
   container.innerHTML = `
     <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-upload text-indigo-600"></i> Upload Modul / Video IPS</h3>
@@ -337,19 +318,16 @@ async function simpanMateriGuru() {
   alert(res.message);
 }
 
-// =========================================================
-// MODUL SISWA
-// =========================================================
+// MODUL MURID
 async function loadDashboardMurid() {
   document.getElementById("murid-welcome-name").innerText = currentUser.nama;
   document.getElementById("murid-welcome-class").innerText = `Kelas ${currentUser.kelas.toUpperCase()}`;
 
-  const res = await callApi({ action: "getStudentDashboard", idMurid: currentUser.idMurid });
+  const res = await callApi({ action: "getMuridDashboard", idMurid: currentUser.idMurid });
   if (res.status === "success") {
     document.getElementById("stat-bintang").innerText = `${res.data.totalBintang || 0} ★`;
     document.getElementById("stat-kehadiran").innerText = `${res.data.absensi.length} Hari`;
     
-    // Cache data
     currentUser.dashboardData = res.data;
     switchMuridTab("nilai");
   }
