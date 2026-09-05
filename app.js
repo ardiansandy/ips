@@ -1,0 +1,444 @@
+// =========================================================
+// KONFIGURASI UTAMA
+// =========================================================
+// ⚠️ GANTI DENGAN URL WEB APP HASIL DEPLOY GOOGLE APPS SCRIPT
+const API_URL = "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_DI_SINI";
+
+let currentUser = null; // Menyimpan data user login
+let currentStudentsList = []; // Cache list siswa per kelas
+
+// =========================================================
+// INIT & AUTOMATIC LOGIN CHECK
+// =========================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const savedUser = localStorage.getItem("ips_user");
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    renderDashboard();
+  }
+});
+
+// Helper Loader
+function showLoading(text = "Memproses...") {
+  document.getElementById("loading-text").innerText = text;
+  document.getElementById("loading-overlay").classList.remove("hidden");
+}
+function hideLoading() {
+  document.getElementById("loading-overlay").classList.add("hidden");
+}
+
+// Fetch API Helper ke Apps Script
+async function callApi(payload) {
+  showLoading();
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    hideLoading();
+    return result;
+  } catch (error) {
+    hideLoading();
+    alert("Terjadi kesalahan koneksi ke server Apps Script!");
+    console.error(error);
+    return { status: "error" };
+  }
+}
+
+// =========================================================
+// TAB SWITCHER LOGIN
+// =========================================================
+function switchLoginTab(tab) {
+  const btnSiswa = document.getElementById("tab-siswa-btn");
+  const btnGuru = document.getElementById("tab-guru-btn");
+  const formSiswa = document.getElementById("form-siswa");
+  const formGuru = document.getElementById("form-guru");
+
+  if (tab === "siswa") {
+    btnSiswa.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all";
+    btnGuru.className = "flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent transition-all";
+    formSiswa.classList.remove("hidden");
+    formGuru.classList.add("hidden");
+  } else {
+    btnGuru.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all";
+    btnSiswa.className = "flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent transition-all";
+    formGuru.classList.remove("hidden");
+    formSiswa.classList.add("hidden");
+  }
+}
+
+// =========================================================
+// LOGIKA AUTHENTICATION
+// =========================================================
+async function loginSiswa() {
+  const username = document.getElementById("siswa-username").value.trim();
+  if (!username) return alert("Masukkan username login Anda!");
+
+  const res = await callApi({ action: "loginStudent", username: username });
+  if (res.status === "success") {
+    currentUser = { role: "siswa", ...res.data };
+    localStorage.setItem("ips_user", JSON.stringify(currentUser));
+    renderDashboard();
+  } else {
+    alert(res.message);
+  }
+}
+
+async function loginGuru() {
+  const u = document.getElementById("guru-username").value.trim();
+  const p = document.getElementById("guru-password").value.trim();
+  if (!u || !p) return alert("Lengkapi username dan password!");
+
+  const res = await callApi({ action: "loginTeacher", username: u, password: p });
+  if (res.status === "success") {
+    currentUser = { role: "guru", ...res.data };
+    localStorage.setItem("ips_user", JSON.stringify(currentUser));
+    renderDashboard();
+  } else {
+    alert(res.message);
+  }
+}
+
+function logout() {
+  localStorage.removeItem("ips_user");
+  currentUser = null;
+  location.reload();
+}
+
+// =========================================================
+// RENDER MAIN DASHBOARD
+// =========================================================
+function renderDashboard() {
+  document.getElementById("login-section").classList.add("hidden");
+  document.getElementById("app-dashboard").classList.remove("hidden");
+
+  const badge = document.getElementById("user-info-badge");
+
+  if (currentUser.role === "guru") {
+    badge.innerText = `Guru: ${currentUser.nama}`;
+    document.getElementById("view-guru").classList.remove("hidden");
+    document.getElementById("view-siswa").classList.add("hidden");
+    loadDataKelasGuru();
+  } else {
+    badge.innerText = `Siswa: ${currentUser.nama} (${currentUser.kelas.toUpperCase()})`;
+    document.getElementById("view-siswa").classList.remove("hidden");
+    document.getElementById("view-guru").classList.add("hidden");
+    loadDashboardSiswa();
+  }
+}
+
+// =========================================================
+// MODUL GURU
+// =========================================================
+let currentGuruTab = "absensi";
+
+async function loadDataKelasGuru() {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const res = await callApi({ action: "getStudentsByClass", kelas: kelas });
+  if (res.status === "success") {
+    currentStudentsList = res.data;
+    switchGuruTab(currentGuruTab);
+  }
+}
+
+function switchGuruTab(tab) {
+  currentGuruTab = tab;
+  const container = document.getElementById("guru-tab-content");
+
+  if (tab === "absensi") {
+    renderAbsensiGuru(container);
+  } else if (tab === "nilai") {
+    renderInputNilaiGuru(container);
+  } else if (tab === "sikap") {
+    renderInputSikapGuru(container);
+  } else if (tab === "materi") {
+    renderUploadMateriGuru(container);
+  }
+}
+
+// 1. Tampilan Absensi Cepat Guru
+function renderAbsensiGuru(container) {
+  const today = new Date().toISOString().split("T")[0];
+  let html = `
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-list-check text-blue-600"></i> Form Absensi Harian</h3>
+      <input type="date" id="absensi-tanggal" value="${today}" class="px-3 py-1 border rounded text-xs">
+    </div>
+    <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto mb-4">
+  `;
+
+  if (currentStudentsList.length === 0) {
+    html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data siswa di kelas ini.</p>`;
+  } else {
+    currentStudentsList.forEach((s) => {
+      html += `
+        <div class="py-2.5 flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-700 w-1/3 truncate">${s.Nama_Lengkap}</span>
+          <select id="absen-${s.ID_Siswa}" class="px-2 py-1 border rounded text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500">
+            <option value="Hadir" selected>Hadir</option>
+            <option value="Izin">Izin</option>
+            <option value="Sakit">Sakit</option>
+            <option value="Alpa">Alpa</option>
+          </select>
+        </div>
+      `;
+    });
+  }
+
+  html += `
+    </div>
+    <button onclick="simpanAbsensiGuru()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
+      Simpan Absensi Kelas
+    </button>
+  `;
+  container.innerHTML = html;
+}
+
+async function simpanAbsensiGuru() {
+  const tanggal = document.getElementById("absensi-tanggal").value;
+  const kelas = document.getElementById("guru-kelas-select").value;
+
+  const dataAbsensi = currentStudentsList.map((s) => {
+    const status = document.getElementById(`absen-${s.ID_Siswa}`).value;
+    return { tanggal, kelas, idSiswa: s.ID_Siswa, status };
+  });
+
+  const res = await callApi({ action: "saveAttendance", dataAbsensi });
+  alert(res.message);
+}
+
+// 2. Tampilan Input Nilai Guru
+function renderInputNilaiGuru(container) {
+  let html = `
+    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-pen-to-square text-emerald-600"></i> Input Nilai Ujian / UH</h3>
+    <div class="mb-4">
+      <label class="block text-xs font-bold text-slate-600 mb-1">Kategori Penilaian</label>
+      <select id="kategori-nilai" class="w-full px-3 py-2 border rounded-lg text-xs">
+        <option value="UH1">Ulangan Harian 1</option>
+        <option value="UH2">Ulangan Harian 2</option>
+        <option value="UTS">Ujian Tengah Semester</option>
+        <option value="UAS">Ujian Akhir Semester</option>
+      </select>
+    </div>
+    <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4">
+  `;
+
+  currentStudentsList.forEach((s) => {
+    html += `
+      <div class="py-2 flex items-center justify-between gap-2">
+        <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${s.Nama_Lengkap}</span>
+        <input type="number" id="nilai-${s.ID_Siswa}" placeholder="0-100" min="0" max="100" class="w-20 px-2 py-1 border rounded text-xs text-center">
+      </div>
+    `;
+  });
+
+  html += `
+    </div>
+    <button onclick="simpanNilaiGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
+      Simpan Nilai Kelas
+    </button>
+  `;
+  container.innerHTML = html;
+}
+
+async function simpanNilaiGuru() {
+  const kategori = document.getElementById("kategori-nilai").value;
+  const kelas = document.getElementById("guru-kelas-select").value;
+
+  const dataNilai = currentStudentsList
+    .map((s) => {
+      const val = document.getElementById(`nilai-${s.ID_Siswa}`).value;
+      return val ? { idSiswa: s.ID_Siswa, kelas, kategori, nilai: Number(val) } : null;
+    })
+    .filter((item) => item !== null);
+
+  if (dataNilai.length === 0) return alert("Isi minimal satu nilai siswa!");
+
+  const res = await callApi({ action: "saveGrade", dataNilai });
+  alert(res.message);
+}
+
+// 3. Tampilan Input Bintang Sikap
+function renderInputSikapGuru(container) {
+  let html = `
+    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-star text-amber-500"></i> Apresiasi Keaktifan (Bintang Sikap)</h3>
+    <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+  `;
+
+  currentStudentsList.forEach((s) => {
+    html += `
+      <div class="py-2.5 flex items-center justify-between gap-2">
+        <span class="text-xs font-semibold text-slate-700">${s.Nama_Lengkap}</span>
+        <button onclick="tambahBintang('${s.ID_Siswa}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300">
+          +1 Star ★
+        </button>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+async function tambahBintang(idSiswa) {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const res = await callApi({ action: "addStar", idSiswa, kelas, catatan: "Aktif bertanya/menjawab" });
+  alert(res.message);
+}
+
+// 4. Upload Materi
+function renderUploadMateriGuru(container) {
+  container.innerHTML = `
+    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-upload text-indigo-600"></i> Upload Modul / Video IPS</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Sub-Materi IPS</label>
+        <select id="materi-sub" class="w-full px-3 py-2 border rounded-lg text-xs">
+          <option value="Geografi">Geografi</option>
+          <option value="Sejarah">Sejarah</option>
+          <option value="Sosiologi">Sosiologi</option>
+          <option value="Ekonomi">Ekonomi</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Judul Materi</label>
+        <input type="text" id="materi-judul" placeholder="Contoh: Bab 1 Kondisi Geografis Indonesia" class="w-full px-3 py-2 border rounded-lg text-xs">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Link Google Drive (Modul/PDF)</label>
+        <input type="text" id="materi-pdf" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 border rounded-lg text-xs">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Link Video YouTube</label>
+        <input type="text" id="materi-youtube" placeholder="https://youtube.com/watch?v=..." class="w-full px-3 py-2 border rounded-lg text-xs">
+      </div>
+      <button onclick="simpanMateriGuru()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
+        Upload Materi
+      </button>
+    </div>
+  `;
+}
+
+async function simpanMateriGuru() {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const dataMateri = {
+    kelas,
+    subIps: document.getElementById("materi-sub").value,
+    judul: document.getElementById("materi-judul").value,
+    linkDrivePdf: document.getElementById("materi-pdf").value,
+    linkYoutube: document.getElementById("materi-youtube").value,
+    deskripsi: "Materi IPS"
+  };
+
+  if (!dataMateri.judul) return alert("Judul materi wajib diisi!");
+  const res = await callApi({ action: "addMaterial", dataMateri });
+  alert(res.message);
+}
+
+// =========================================================
+// MODUL SISWA
+// =========================================================
+async function loadDashboardSiswa() {
+  document.getElementById("siswa-welcome-name").innerText = currentUser.nama;
+  document.getElementById("siswa-welcome-class").innerText = `Kelas ${currentUser.kelas.toUpperCase()}`;
+
+  const res = await callApi({ action: "getStudentDashboard", idSiswa: currentUser.idSiswa });
+  if (res.status === "success") {
+    document.getElementById("stat-bintang").innerText = `${res.data.totalBintang || 0} ★`;
+    document.getElementById("stat-kehadiran").innerText = `${res.data.absensi.length} Hari`;
+    
+    // Cache data
+    currentUser.dashboardData = res.data;
+    switchSiswaTab("nilai");
+  }
+}
+
+function switchSiswaTab(tab) {
+  const container = document.getElementById("siswa-tab-content");
+  const data = currentUser.dashboardData || { nilai: [], absensi: [] };
+
+  if (tab === "nilai") {
+    let html = `<h3 class="font-bold text-slate-700 text-sm mb-3">Rekap Nilai IPS Saya</h3>`;
+    if (data.nilai.length === 0) {
+      html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada nilai yang diinput oleh guru.</p>`;
+    } else {
+      html += `<div class="space-y-2">`;
+      data.nilai.forEach(n => {
+        html += `
+          <div class="flex justify-between items-center p-3 bg-slate-50 border rounded-lg">
+            <span class="text-xs font-semibold text-slate-700">${n.Kategori}</span>
+            <span class="text-sm font-black text-blue-600">${n.Nilai}</span>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+    container.innerHTML = html;
+
+  } else if (tab === "materi") {
+    loadMateriSiswa(container);
+  } else if (tab === "tugas") {
+    renderKumpulTugasSiswa(container);
+  }
+}
+
+async function loadMateriSiswa(container) {
+  const res = await callApi({ action: "getMaterials", kelas: currentUser.kelas });
+  let html = `<h3 class="font-bold text-slate-700 text-sm mb-3">Daftar Modul & Video IPS</h3>`;
+
+  if (res.status === "success" && res.data.length > 0) {
+    html += `<div class="space-y-3">`;
+    res.data.forEach(m => {
+      html += `
+        <div class="p-3 border rounded-xl bg-slate-50 space-y-2">
+          <div class="flex justify-between items-start">
+            <span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">${m.Sub_IPS || 'IPS'}</span>
+            <span class="text-[10px] text-slate-400">Kelas ${m.Kelas}</span>
+          </div>
+          <h4 class="text-xs font-bold text-slate-800">${m.Judul}</h4>
+          <div class="flex gap-2 pt-1">
+            ${m.Link_Drive_PDF ? `<a href="${m.Link_Drive_PDF}" target="_blank" class="text-[11px] bg-red-600 text-white px-2.5 py-1 rounded font-medium"><i class="fa-solid fa-file-pdf"></i> Baca PDF</a>` : ''}
+            ${m.Link_Youtube ? `<a href="${m.Link_Youtube}" target="_blank" class="text-[11px] bg-red-100 text-red-600 px-2.5 py-1 rounded font-medium"><i class="fa-brands fa-youtube"></i> Tonton Video</a>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  } else {
+    html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada materi IPS untuk kelas ini.</p>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderKumpulTugasSiswa(container) {
+  container.innerHTML = `
+    <h3 class="font-bold text-slate-700 text-sm mb-3">Kirim Tugas IPS</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas</label>
+        <input type="text" id="tugas-judul" placeholder="Contoh: Tugas Bab 1 Geografi" class="w-full px-3 py-2 border rounded-lg text-xs">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Link File (Google Drive / Foto)</label>
+        <input type="text" id="tugas-link" placeholder="Paste link file drive di sini..." class="w-full px-3 py-2 border rounded-lg text-xs">
+      </div>
+      <button onclick="kirimTugasSiswa()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
+        Kirimkan Tugas
+      </button>
+    </div>
+  `;
+}
+
+async function kirimTugasSiswa() {
+  const dataTugas = {
+    idSiswa: currentUser.idSiswa,
+    judulTugas: document.getElementById("tugas-judul").value,
+    linkFileDrive: document.getElementById("tugas-link").value
+  };
+
+  if (!dataTugas.judulTugas || !dataTugas.linkFileDrive) return alert("Lengkapi judul dan link tugas!");
+  const res = await callApi({ action: "submitTask", dataTugas });
+  alert(res.message);
+}
