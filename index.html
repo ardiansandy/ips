@@ -48,24 +48,24 @@
 
       <!-- Tab Switcher Login -->
       <div class="flex border-b border-slate-200 bg-slate-50">
-        <button id="tab-siswa-btn" onclick="switchLoginTab('siswa')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all">
-          <i class="fa-solid fa-user-graduate mr-1"></i> Login Siswa
+        <button id="tab-murid-btn" onclick="switchLoginTab('murid')" class="flex-1 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 transition-all">
+          <i class="fa-solid fa-user-graduate mr-1"></i> Login Murid
         </button>
         <button id="tab-guru-btn" onclick="switchLoginTab('guru')" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent transition-all">
           <i class="fa-solid fa-chalkboard-user mr-1"></i> Login Guru
         </button>
       </div>
 
-      <!-- Form Login Siswa -->
-      <div id="form-siswa" class="p-6 space-y-4">
+      <!-- Form Login Murid -->
+      <div id="form-murid" class="p-6 space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">USERNAME SISWA</label>
-          <input type="text" id="siswa-username" placeholder="Contoh: ardian sandy 15101989" 
+          <input type="text" id="murid-username" placeholder="Contoh: ardian sandy 15101989" 
                  class="w-full px-4 py-3 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
           <p class="text-[11px] text-slate-400 mt-1">Kombinasi Nama Lengkap + Tanggal Lahir (DDMMYYYY) tanpa spasi atau dengan spasi.</p>
         </div>
-        <button onclick="loginSiswa()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg text-sm shadow-md transition-all">
-          Masuk sebagai Siswa
+        <button onclick="loginMurid()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg text-sm shadow-md transition-all">
+          Masuk sebagai Murid
         </button>
       </div>
 
@@ -147,14 +147,14 @@
       </div>
     </main>
 
-    <!-- Content Area Siswa -->
-    <main id="view-siswa" class="hidden flex-1 max-w-5xl w-full mx-auto p-4 space-y-4">
+    <!-- Content Area Murid -->
+    <main id="view-murid" class="hidden flex-1 max-w-5xl w-full mx-auto p-4 space-y-4">
       <!-- Card Welcome & Stats -->
       <div class="bg-gradient-to-r from-blue-900 to-slate-800 rounded-xl p-5 text-white shadow-md relative overflow-hidden">
         <div class="relative z-10">
-          <span class="text-xs font-semibold bg-blue-500/30 border border-blue-400/30 px-2.5 py-1 rounded-full">Siswa IPS</span>
-          <h2 id="siswa-welcome-name" class="text-xl font-bold mt-2">Selamat Datang!</h2>
-          <p id="siswa-welcome-class" class="text-xs text-blue-200">Kelas --</p>
+          <span class="text-xs font-semibold bg-blue-500/30 border border-blue-400/30 px-2.5 py-1 rounded-full">Murid IPS</span>
+          <h2 id="murid-welcome-name" class="text-xl font-bold mt-2">Selamat Datang!</h2>
+          <p id="murid-welcome-class" class="text-xs text-blue-200">Kelas --</p>
         </div>
         <div class="absolute right-4 bottom-2 opacity-20 text-7xl">
           <i class="fa-solid fa-graduation-cap"></i>
@@ -179,20 +179,20 @@
         </div>
       </div>
 
-      <!-- Tab Menu Siswa -->
+      <!-- Tab Menu Murid -->
       <div class="flex border-b border-slate-200 bg-white rounded-t-xl px-2">
-        <button onclick="switchSiswaTab('nilai')" id="btn-siswa-nilai" class="siswa-nav-btn py-3 px-4 text-xs font-bold border-b-2 border-blue-600 text-blue-600">
+        <button onclick="switchMuridTab('nilai')" id="btn-murid-nilai" class="murid-nav-btn py-3 px-4 text-xs font-bold border-b-2 border-blue-600 text-blue-600">
           <i class="fa-solid fa-chart-line mr-1"></i> Nilai Saya
         </button>
-        <button onclick="switchSiswaTab('materi')" id="btn-siswa-materi" class="siswa-nav-btn py-3 px-4 text-xs font-bold text-slate-500 border-b-2 border-transparent">
+        <button onclick="switchMuridTab('materi')" id="btn-murid-materi" class="murid-nav-btn py-3 px-4 text-xs font-bold text-slate-500 border-b-2 border-transparent">
           <i class="fa-solid fa-book-open mr-1"></i> Materi & Video
         </button>
-        <button onclick="switchSiswaTab('tugas')" id="btn-siswa-tugas" class="siswa-nav-btn py-3 px-4 text-xs font-bold text-slate-500 border-b-2 border-transparent">
+        <button onclick="switchMuridTab('tugas')" id="btn-murid-tugas" class="murid-nav-btn py-3 px-4 text-xs font-bold text-slate-500 border-b-2 border-transparent">
           <i class="fa-solid fa-upload mr-1"></i> Kirim Tugas
         </button>
       </div>
 
-      <div id="siswa-tab-content" class="bg-white p-4 md:p-6 rounded-b-xl shadow-sm border border-slate-200">
+      <div id="murid-tab-content" class="bg-white p-4 md:p-6 rounded-b-xl shadow-sm border border-slate-200">
         <!-- Rendered dynamically by JS -->
       </div>
     </main>
