@@ -380,6 +380,7 @@ async function loadMateriMurid(container) {
             <span class="text-[10px] text-slate-400">Kelas ${m.Kelas}</span>
           </div>
           <h4 class="text-xs font-bold text-slate-800">${m.Judul}</h4>
+          <p class="text-xs text-slate-600 mt-1">${m.Deskripsi || ''}</p>
           <div class="flex gap-2 pt-1">
             ${m.Link_Drive_PDF ? `<a href="${m.Link_Drive_PDF}" target="_blank" class="text-[11px] bg-red-600 text-white px-2.5 py-1 rounded font-medium"><i class="fa-solid fa-file-pdf"></i> Baca PDF</a>` : ''}
             ${m.Link_Youtube ? `<a href="${m.Link_Youtube}" target="_blank" class="text-[11px] bg-red-100 text-red-600 px-2.5 py-1 rounded font-medium"><i class="fa-brands fa-youtube"></i> Tonton Video</a>` : ''}
