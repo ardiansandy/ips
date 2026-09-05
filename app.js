@@ -105,19 +105,22 @@ function renderDashboard() {
   document.getElementById("login-section").classList.add("hidden");
   document.getElementById("app-dashboard").classList.remove("hidden");
 
-  const badge = document.getElementById("user-info-badge").innerText = "SMP Islam Terpadu Insan Mandiri";
+  const badge = document.getElementById("user-info-badge");
 
   if (currentUser.role === "guru") {
-    badge.innerText = `Guru: ${currentUser.nama}`;
-    document.getElementById("view-guru").classList.remove("hidden");
-    document.getElementById("view-murid").classList.add("hidden");
-    loadDataKelasGuru();
-  } else {
-    document.getElementById("view-murid").classList.remove("hidden");
-    document.getElementById("view-guru").classList.add("hidden");
-    loadDashboardMurid();
+      // Tampilan Guru: Tetap menampilkan nama Guru
+      badge.innerText = `Guru: ${currentUser.nama}`;
+      document.getElementById("view-guru").classList.remove("hidden");
+      document.getElementById("view-murid").classList.add("hidden");
+      loadDataKelasGuru();
+    } else {
+      // Tampilan Murid: Menampilkan nama sekolah
+      badge.innerText = "SMP Islam Terpadu Insan Mandiri";
+      document.getElementById("view-murid").classList.remove("hidden");
+      document.getElementById("view-guru").classList.add("hidden");
+      loadDashboardMurid();
+    }
   }
-}
 
 // MODUL GURU
 let currentGuruTab = "absensi";
