@@ -291,10 +291,13 @@ function renderUploadMateriGuru(container) {
         <label class="block text-xs font-bold text-slate-600 mb-1">Judul Materi</label>
         <input type="text" id="materi-judul" placeholder="Contoh: Bab 1 Kondisi Geografis Indonesia" class="w-full px-3 py-2 border rounded-lg text-xs">
       </div>
+      
+      <!-- KOLOM DESKRIPSI UNTUK GURU -->
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">Deskripsi / Penjelasan Singkat</label>
-        <textarea id="materi-deskripsi" rows="3" placeholder="Masukkan deskripsi atau petunjuk pengerjaan untuk murid..." class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        <textarea id="materi-deskripsi" rows="3" placeholder="Tulis deskripsi atau petunjuk pengerjaan di sini..." class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
       </div>
+
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">Link Google Drive (Modul/PDF)</label>
         <input type="text" id="materi-pdf" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 border rounded-lg text-xs">
@@ -303,7 +306,7 @@ function renderUploadMateriGuru(container) {
         <label class="block text-xs font-bold text-slate-600 mb-1">Link Video YouTube</label>
         <input type="text" id="materi-youtube" placeholder="https://youtube.com/watch?v=..." class="w-full px-3 py-2 border rounded-lg text-xs">
       </div>
-      <button onclick="simpanMateriGuru()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
+      <button onclick="simpanMateriGuru()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
         Upload Materi
       </button>
     </div>
