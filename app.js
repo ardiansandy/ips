@@ -40,6 +40,7 @@ async function callApi(payload) {
   }
 }
 
+// Switch Tab Login Guru / Murid
 function switchLoginTab(tab) {
   const btnMurid = document.getElementById("tab-murid-btn");
   const btnGuru = document.getElementById("tab-guru-btn");
@@ -59,12 +60,15 @@ function switchLoginTab(tab) {
   }
 }
 
-// LOGIN MURID: Username + Password terpisah
+// Proses Login Murid (Cek Username & Password Sekaligus)
 async function loginMurid() {
   const username = document.getElementById("murid-username").value.trim();
   const password = document.getElementById("murid-password").value.trim();
-  
-  if (!username || !password) return alert("Masukkan Username dan Password Anda!");
+
+  if (!username || !password) {
+    alert("Lengkapi Username (Nama) dan Password (Tanggal Lahir) kamu!");
+    return;
+  }
 
   const res = await callApi({ action: "loginMurid", username: username, password: password });
   if (res.status === "success") {
