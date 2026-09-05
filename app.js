@@ -376,7 +376,7 @@ function switchMuridTab(tab) {
 
 async function loadMateriMurid(container) {
   const res = await callApi({ action: "getMaterials", kelas: currentUser.kelas });
-  let html = `<h3 class="font-bold text-slate-700 text-sm mb-3">Daftar Modul & Video IPS</h3>`;
+  let html = `<h3 class="font-bold text-slate-700 text-sm mb-3">Daftar Modul Pembelajaran IPS</h3>`;
 
   if (res.status === "success" && res.data.length > 0) {
     html += `<div class="space-y-3">`;
