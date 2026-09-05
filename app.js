@@ -2,7 +2,7 @@
 // KONFIGURASI UTAMA
 // =========================================================
 // ⚠️ GANTI DENGAN URL WEB APP HASIL DEPLOY GOOGLE APPS SCRIPT
-const API_URL = "MASUKKAN_URL_WEB_APP_APPS_SCRIPT_DI_SINI";
+const API_URL = "https://script.google.com/macros/s/AKfycbxgGw8hM2_rjKmu5Xs71Yu9bu2xaUfuZt31jTf8S1ZXg2F1PxO2RJbCh3xSH4OUte8Zpg/exec";
 
 let currentUser = null; // Menyimpan data user login
 let currentStudentsList = []; // Cache list siswa per kelas
