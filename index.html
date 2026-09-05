@@ -57,12 +57,18 @@
       </div>
 
       <!-- Form Login Murid -->
+<!-- Form Login Murid (Username & Password dalam 1 Tampilan) -->
       <div id="form-murid" class="p-6 space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">USERNAME SISWA</label>
-          <input type="text" id="murid-username" placeholder="Contoh: ardian sandy 15101989" 
+          <label class="block text-xs font-bold text-slate-600 mb-1">USERNAME (NAMA LENGKAP)</label>
+          <input type="text" id="murid-username" placeholder="Contoh: Ardian Sandy" 
                  class="w-full px-4 py-3 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-          <p class="text-[11px] text-slate-400 mt-1">Kombinasi Nama Lengkap + Tanggal Lahir (DDMMYYYY) tanpa spasi atau dengan spasi.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">PASSWORD (TANGGAL LAHIR)</label>
+          <input type="password" id="murid-password" placeholder="Format: DDMMYYYY (misal: 15101989)" 
+                 class="w-full px-4 py-3 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                 onkeypress="if(event.key === 'Enter') loginMurid()">
         </div>
         <button onclick="loginMurid()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg text-sm shadow-md transition-all">
           Masuk sebagai Murid
