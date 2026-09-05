@@ -105,7 +105,7 @@ function renderDashboard() {
   document.getElementById("login-section").classList.add("hidden");
   document.getElementById("app-dashboard").classList.remove("hidden");
 
-  const badge = document.getElementById("user-info-badge");
+  const badge = document.getElementById("user-info-badge").innerText = "SMP Islam Terpadu Insan Mandiri";
 
   if (currentUser.role === "guru") {
     badge.innerText = `Guru: ${currentUser.nama}`;
@@ -113,7 +113,6 @@ function renderDashboard() {
     document.getElementById("view-murid").classList.add("hidden");
     loadDataKelasGuru();
   } else {
-    badge.innerText = `Murid: ${currentUser.nama} (${currentUser.kelas.toUpperCase()})`;
     document.getElementById("view-murid").classList.remove("hidden");
     document.getElementById("view-guru").classList.add("hidden");
     loadDashboardMurid();
