@@ -292,6 +292,10 @@ function renderUploadMateriGuru(container) {
         <input type="text" id="materi-judul" placeholder="Contoh: Bab 1 Kondisi Geografis Indonesia" class="w-full px-3 py-2 border rounded-lg text-xs">
       </div>
       <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Deskripsi / Penjelasan Singkat</label>
+        <textarea id="materi-deskripsi" rows="3" placeholder="Masukkan deskripsi atau petunjuk pengerjaan untuk murid..." class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+      </div>
+      <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">Link Google Drive (Modul/PDF)</label>
         <input type="text" id="materi-pdf" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 border rounded-lg text-xs">
       </div>
@@ -312,6 +316,7 @@ async function simpanMateriGuru() {
     kelas,
     subIps: document.getElementById("materi-sub").value,
     judul: document.getElementById("materi-judul").value,
+    deskripsi: document.getElementById("materi-deskripsi").value.trim(),
     linkDrivePdf: document.getElementById("materi-pdf").value,
     linkYoutube: document.getElementById("materi-youtube").value,
     deskripsi: "Materi IPS"
