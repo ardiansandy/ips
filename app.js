@@ -355,8 +355,7 @@ async function simpanAbsensiGuru() {
   alert(res.message);
 }
 
-// 1. RENDER INPUT NILAI (Satu Tampilan untuk Tugas, UH, UTS, UAS)
-// Render Tab Input Nilai Guru
+
 // RENDER INPUT NILAI GURU (Dinamis Murni dari Tab Buat Tugas)
 async function renderInputNilaiGuru(container) {
   const kelas = document.getElementById("guru-kelas-select").value;
@@ -474,46 +473,28 @@ async function simpanNilaiGuru() {
   }
 }
 
-// 2. SIMPAN NILAI MASSAL DARI TAB INPUT NILAI
-async function simpanNilaiGuru() {
-  const kategori = document.getElementById("kategori-nilai").value;
-  const kelas = document.getElementById("guru-kelas-select").value;
-
-  if (!kategori) return alert("Pilih tugas atau kategori penilaian terlebih dahulu!");
-
-  // Ambil semua murid yang input nilainya diisi
-  const dataNilai = currentMuridList
-    .map((m) => {
-      const val = document.getElementById(`nilai-${m.ID_Murid}`).value;
-      return val !== "" ? { idMurid: m.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
-    })
-    .filter((item) => item !== null);
-
-  if (dataNilai.length === 0) return alert("Isi minimal satu nilai murid!");
-
-  const res = await callApi({ action: "saveGrade", dataNilai });
-  alert(res.message);
-
-  if (res.status === "success") {
-    // Reset form input angka
-    currentMuridList.forEach((m) => {
-      const el = document.getElementById(`nilai-${m.ID_Murid}`);
-      if (el) el.value = "";
-    });
-  }
-}
-
 function renderInputSikapGuru(container) {
   let html = `
-    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-star text-amber-500"></i> Apresiasi Keaktifan (Bintang Sikap)</h3>
+    <h3 class="font-bold text-slate-700 text-sm mb-3">
+      <i class="fa-solid fa-star text-amber-500"></i> Apresiasi Keaktifan (Bintang Sikap)
+    </h3>
     <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto">
   `;
 
   currentMuridList.forEach((m) => {
+    // Pastikan angka total Bintang terbaca dari properti Total_Bintang atau Bintang jika ada dari backend
+    const currentStars = Number(m.Total_Bintang || m.Bintang || 0);
+
     html += `
       <div class="py-2.5 flex items-center justify-between gap-2">
-        <span class="text-xs font-semibold text-slate-700">${m.Nama_Lengkap}</span>
-        <button onclick="tambahBintang('${m.ID_Murid}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-700">${m.Nama_Lengkap}</span>
+          <!-- Lencana Total Bintang Murid -->
+          <span id="star-badge-${m.ID_Murid}" class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300">
+            ★ ${currentStars}
+          </span>
+        </div>
+        <button onclick="tambahBintangFast('${m.ID_Murid}')" class="bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-700 font-bold px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-amber-300 transition-transform">
           +1 Star ★
         </button>
       </div>
@@ -523,11 +504,42 @@ function renderInputSikapGuru(container) {
   html += `</div>`;
   container.innerHTML = html;
 }
-
-async function tambahBintang(idMurid) {
+function tambahBintangFast(idMurid) {
   const kelas = document.getElementById("guru-kelas-select").value;
-  const res = await callApi({ action: "addStar", idMurid, kelas, catatan: "Aktif bertanya/menjawab" });
-  alert(res.message);
+  const badgeEl = document.getElementById(`star-badge-${idMurid}`);
+
+  // 1. UPDATE TAMPILAN INSTAN DI LAYAR (Optimistic UI)
+  if (badgeEl) {
+    const currentTotal = parseInt(badgeEl.innerText.replace(/[^0-9]/g, "")) || 0;
+    const newTotal = currentTotal + 1;
+    badgeEl.innerText = `★ ${newTotal}`;
+
+    // Efek visual warna hijau singkat saat mengeklik
+    badgeEl.classList.add("bg-emerald-200");
+    setTimeout(() => badgeEl.classList.remove("bg-emerald-200"), 400);
+
+    // Update data pada array lokal memori
+    const targetMurid = currentMuridList.find((m) => String(m.ID_Murid) === String(idMurid));
+    if (targetMurid) {
+      targetMurid.Total_Bintang = newTotal;
+    }
+  }
+
+  // 2. PROSES SIMPAN KE SERVER DI LATAR BELAKANG (Mengabaikan showLoading overlay)
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "addStar", idMurid, kelas, catatan: "Aktif bertanya/menjawab" })
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.status !== "success") {
+        console.error("Gagal simpan bintang:", result.message);
+      }
+    })
+    .catch((err) => {
+      console.error("Kesalahan jaringan simpan bintang:", err);
+    });
 }
 
 function renderUploadMateriGuru(container) {
