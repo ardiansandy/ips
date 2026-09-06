@@ -168,14 +168,15 @@ function switchGuruTab(tab) {
   }
 }
 
-// Render Form Pembuatan Tugas Guru
+// Render Form Pembuatan Tugas Guru & Penilaian Tugas (Digabung agar Rapi)
 function renderInputTugasGuru(container) {
-  container.innerHTML = `
+  let html = `
+    <!-- BAGIAN 1: FORM BUAT TUGAS BARU -->
     <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-square-plus text-blue-600"></i> Buat Tugas Baru untuk Murid</h3>
-    <div class="space-y-3">
+    <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas</label>
-        <input type="text" id="guru-tugas-judul" placeholder="Contoh: Latihan Bab 1 Perubahan Sosial" class="w-full px-3 py-2 border rounded-lg text-xs">
+        <input type="text" id="guru-tugas-judul" placeholder="Contoh: Latihan Bab 1 Perubahan Sosial" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
       </div>
 
       <div>
@@ -189,15 +190,80 @@ function renderInputTugasGuru(container) {
 
       <div>
         <label id="label-detail-tugas" class="block text-xs font-bold text-slate-600 mb-1">Detail / Petunjuk Tugas</label>
-        <textarea id="guru-tugas-detail" rows="3" placeholder="Contoh: Kerjakan buku mari berlatih halaman 23 nomor 1-5" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+        <textarea id="guru-tugas-detail" rows="3" placeholder="Contoh: Kerjakan buku mari berlatih halaman 23 nomor 1-5" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"></textarea>
       </div>
 
       <button onclick="simpanTugasGuru()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
         Publikasikan Tugas
       </button>
     </div>
+
+    <!-- BAGIAN 2: FORM PENILAIAN TUGAS MURID -->
+    <hr class="my-6 border-slate-200">
+    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-check-double text-emerald-600"></i> Penilaian & Ceklis Tugas Murid</h3>
+    
+    <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Murid</label>
+        <select id="penilaian-id-murid" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
   `;
+
+  if (currentMuridList.length === 0) {
+    html += `<option value="">Tidak ada data murid di kelas ini</option>`;
+  } else {
+    currentMuridList.forEach(m => {
+      html += `<option value="${m.ID_Murid}">${m.Nama_Lengkap}</option>`;
+    });
+  }
+
+  html += `
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas Yang Dinilai</label>
+        <input type="text" id="penilaian-judul-tugas" placeholder="Sesuai judul tugas yang diberikan" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Nilai Tugas (0-100)</label>
+        <input type="number" id="penilaian-angka" min="0" max="100" placeholder="Contoh: 85" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+      </div>
+
+      <button onclick="simpanPenilaianTugasGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
+        Simpan Nilai & Tandai Selesai
+      </button>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
+
+// Simpan Penilaian oleh Guru
+async function simpanPenilaianTugasGuru() {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const idMurid = document.getElementById("penilaian-id-murid").value;
+  const judulTugas = document.getElementById("penilaian-judul-tugas").value.trim();
+  const nilai = document.getElementById("penilaian-angka").value;
+
+  if (!idMurid) return alert("Pilih murid terlebih dahulu!");
+  if (!judulTugas || !nilai) return alert("Lengkapi judul tugas dan nilainya!");
+
+  const res = await callApi({
+    action: "gradeTaskByTeacher",
+    kelas,
+    idMurid,
+    judulTugas,
+    nilai
+  });
+
+  alert(res.message);
+  if (res.status === "success") {
+    document.getElementById("penilaian-judul-tugas").value = "";
+    document.getElementById("penilaian-angka").value = "";
+  }
+}
+
 
 // Menyesuaikan placeholder/label berdasarkan tipe tugas
 function toggleFormDetailTugas() {
@@ -601,67 +667,4 @@ async function kirimTugasMurid() {
   const res = await callApi({ action: "submitTask", dataTugas });
   alert(res.message);
 }
-
-// Tambahkan modal/form kecil di bawah form buat tugas untuk memberi nilai tugas
-function renderPenilaianTugasGuru(container) {
-  let html = `
-    <hr class="my-5 border-slate-200">
-    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-check-double text-emerald-600"></i> Penilaian & Ceklis Tugas Murid</h3>
-    
-    <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Murid</label>
-        <select id="penilaian-id-murid" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
-  `;
-
-  currentMuridList.forEach(m => {
-    html += `<option value="${m.ID_Murid}">${m.Nama_Lengkap}</option>`;
-  });
-
-  html += `
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas Yang Dinilai</label>
-        <input type="text" id="penilaian-judul-tugas" placeholder="Sesuai judul tugas yang diberikan" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Nilai Tugas (0-100)</label>
-        <input type="number" id="penilaian-angka" min="0" max="100" placeholder="Contoh: 85" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
-      </div>
-
-      <button onclick="simpanPenilaianTugasGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
-        Simpan Nilai & Tandai Selesai
-      </button>
-    </div>
-  `;
-
-  container.insertAdjacentHTML('beforeend', html);
-}
-
-// Panggil fungsi ini di akhir renderInputTugasGuru(container)
-// Tambahkan baris: renderPenilaianTugasGuru(container); di baris paling bawah renderInputTugasGuru()
-
-async function simpanPenilaianTugasGuru() {
-  const kelas = document.getElementById("guru-kelas-select").value;
-  const idMurid = document.getElementById("penilaian-id-murid").value;
-  const judulTugas = document.getElementById("penilaian-judul-tugas").value.trim();
-  const nilai = document.getElementById("penilaian-angka").value;
-
-  if (!judulTugas || !nilai) return alert("Lengkapi judul tugas dan nilainya!");
-
-  const res = await callApi({
-    action: "gradeTaskByTeacher",
-    kelas,
-    idMurid,
-    judulTugas,
-    nilai
-  });
-
-  alert(res.message);
-}
-
-
 
