@@ -374,28 +374,19 @@ async function renderInputNilaiGuru(container) {
     <div class="mb-4">
       <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Tugas / Kategori Penilaian</label>
       <select id="kategori-nilai" onchange="loadNilaiMuridByKategori()" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500">
-        <option value="" disabled selected>-- Pilih Tugas / Kategori --</option>
-        <optgroup label="Tugas Yang Sudah Dibuat">
+        <option value="" disabled selected>-- Pilih Penilaian --</option>
   `;
 
   if (daftarTugas.length === 0) {
-    html += `<option value="" disabled>Belum ada tugas yang dibuat</option>`;
+    html += `<option value="" disabled>Belum ada tugas/penilaian yang dibuat</option>`;
   } else {
     daftarTugas.forEach(t => {
-      html += `<option value="Tugas: ${t.Judul_Tugas}">Tugas: ${t.Judul_Tugas}</option>`;
+      // Mengambil judul murni tanpa imbuhan "Tugas: "
+      html += `<option value="${t.Judul_Tugas}">${t.Judul_Tugas}</option>`;
     });
   }
 
-  html += `
-        </optgroup>
-        <optgroup label="Penilaian Periodik (UH / Ujian)">
-          <option value="UH 1">Ulangan Harian 1</option>
-          <option value="UH 2">Ulangan Harian 2</option>
-          <option value="UTS">Ujian Tengah Semester</option>
-          <option value="UAS">Ujian Akhir Semester</option>
-        </optgroup>
-      </select>
-    </div>
+  html += `</select>`;
 
     <!-- LIST MURID UNTUK INPUT NILAI -->
     <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
