@@ -317,13 +317,13 @@ async function simpanAbsensiGuru() {
 }
 
 // 1. RENDER INPUT NILAI (Satu Tampilan untuk Tugas, UH, UTS, UAS)
+// Render Tab Input Nilai Guru
 async function renderInputNilaiGuru(container) {
   const kelas = document.getElementById("guru-kelas-select").value;
 
-  // Loading state
   container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Memuat daftar tugas dan ujian...</p>`;
 
-  // Ambil daftar tugas yang sudah dibuat guru untuk kelas ini
+  // Ambil daftar tugas yang sudah dibuat
   const resTugas = await callApi({ action: "getTasksByClass", kelas: kelas });
   const daftarTugas = (resTugas.status === "success") ? resTugas.data : [];
 
@@ -334,7 +334,8 @@ async function renderInputNilaiGuru(container) {
     
     <div class="mb-4">
       <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Tugas / Kategori Penilaian</label>
-      <select id="kategori-nilai" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500">
+      <select id="kategori-nilai" onchange="loadNilaiMuridByKategori()" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500">
+        <option value="" disabled selected>-- Pilih Tugas / Kategori --</option>
         <optgroup label="Tugas Yang Sudah Dibuat">
   `;
 
@@ -342,7 +343,6 @@ async function renderInputNilaiGuru(container) {
     html += `<option value="" disabled>Belum ada tugas yang dibuat</option>`;
   } else {
     daftarTugas.forEach(t => {
-      // Menyiapkan value dengan prefix "Tugas: "
       html += `<option value="Tugas: ${t.Judul_Tugas}">Tugas: ${t.Judul_Tugas}</option>`;
     });
   }
@@ -358,7 +358,7 @@ async function renderInputNilaiGuru(container) {
       </select>
     </div>
 
-    <!-- DAFTAR MURID UNTUK INPUT NILAI MASSAL -->
+    <!-- LIST MURID UNTUK INPUT NILAI -->
     <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
   `;
 
@@ -369,7 +369,7 @@ async function renderInputNilaiGuru(container) {
       html += `
         <div class="py-2 px-1 flex items-center justify-between gap-2">
           <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${m.Nama_Lengkap}</span>
-          <input type="number" id="nilai-${m.ID_Murid}" placeholder="0-100" min="0" max="100" class="w-24 px-2 py-1.5 border rounded-lg text-xs text-center font-bold bg-white focus:ring-2 focus:ring-emerald-500">
+          <input type="number" id="nilai-${m.ID_Murid}" placeholder="Belum ada" min="0" max="100" class="input-nilai-murid w-28 px-2 py-1.5 border rounded-lg text-xs text-center font-bold bg-white focus:ring-2 focus:ring-emerald-500">
         </div>
       `;
     });
@@ -378,11 +378,67 @@ async function renderInputNilaiGuru(container) {
   html += `
     </div>
     <button onclick="simpanNilaiGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
-      Simpan Semua Nilai
+      Simpan / Perbarui Nilai
     </button>
   `;
 
   container.innerHTML = html;
+}
+
+// Fungsi Otomatis Memuat Nilai Ter Simpan Saat Dropdown Dipilih
+async function loadNilaiMuridByKategori() {
+  const kategori = document.getElementById("kategori-nilai").value;
+  const kelas = document.getElementById("guru-kelas-select").value;
+
+  if (!kategori) return;
+
+  // Kosongkan semua kolom nilai terlebih dahulu
+  currentMuridList.forEach((m) => {
+    const inputEl = document.getElementById(`nilai-${m.ID_Murid}`);
+    if (inputEl) {
+      inputEl.value = "";
+      inputEl.classList.remove("bg-emerald-50", "border-emerald-500", "text-emerald-700");
+    }
+  });
+
+  // Ambil data nilai ter-update dari backend
+  const res = await callApi({ action: "getGradesByCategory", kelas, kategori });
+
+  if (res.status === "success" && res.data.length > 0) {
+    res.data.forEach(n => {
+      const inputEl = document.getElementById(`nilai-${n.ID_Murid}`);
+      if (inputEl) {
+        inputEl.value = n.Nilai;
+        // Memberi highlight warna hijau tipis untuk nilai yang sudah terisi
+        inputEl.classList.add("bg-emerald-50", "border-emerald-500", "text-emerald-700");
+      }
+    });
+  }
+}
+
+// Simpan/Update Nilai Massal
+async function simpanNilaiGuru() {
+  const kategori = document.getElementById("kategori-nilai").value;
+  const kelas = document.getElementById("guru-kelas-select").value;
+
+  if (!kategori) return alert("Pilih tugas atau kategori penilaian terlebih dahulu!");
+
+  const dataNilai = currentMuridList
+    .map((m) => {
+      const val = document.getElementById(`nilai-${m.ID_Murid}`).value;
+      return val !== "" ? { idMurid: m.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
+    })
+    .filter((item) => item !== null);
+
+  if (dataNilai.length === 0) return alert("Isi minimal satu nilai murid!");
+
+  const res = await callApi({ action: "saveGrade", dataNilai });
+  alert(res.message);
+
+  if (res.status === "success") {
+    // Refresh tampilan nilai setelah disimpan
+    loadNilaiMuridByKategori();
+  }
 }
 
 // 2. SIMPAN NILAI MASSAL DARI TAB INPUT NILAI
