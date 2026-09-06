@@ -168,11 +168,11 @@ function switchGuruTab(tab) {
   }
 }
 
-// Render Form Pembuatan Tugas Guru & Penilaian Tugas (Digabung agar Rapi)
 function renderInputTugasGuru(container) {
-  let html = `
-    <!-- BAGIAN 1: FORM BUAT TUGAS BARU -->
-    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-square-plus text-blue-600"></i> Buat Tugas Baru untuk Murid</h3>
+  container.innerHTML = `
+    <h3 class="font-bold text-slate-700 text-sm mb-3">
+      <i class="fa-solid fa-square-plus text-blue-600"></i> Buat Tugas Baru untuk Murid
+    </h3>
     <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas</label>
@@ -197,46 +197,7 @@ function renderInputTugasGuru(container) {
         Publikasikan Tugas
       </button>
     </div>
-
-    <!-- BAGIAN 2: FORM PENILAIAN TUGAS MURID -->
-    <hr class="my-6 border-slate-200">
-    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-check-double text-emerald-600"></i> Penilaian & Ceklis Tugas Murid</h3>
-    
-    <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Murid</label>
-        <select id="penilaian-id-murid" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
   `;
-
-  if (currentMuridList.length === 0) {
-    html += `<option value="">Tidak ada data murid di kelas ini</option>`;
-  } else {
-    currentMuridList.forEach(m => {
-      html += `<option value="${m.ID_Murid}">${m.Nama_Lengkap}</option>`;
-    });
-  }
-
-  html += `
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas Yang Dinilai</label>
-        <input type="text" id="penilaian-judul-tugas" placeholder="Sesuai judul tugas yang diberikan" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1">Nilai Tugas (0-100)</label>
-        <input type="number" id="penilaian-angka" min="0" max="100" placeholder="Contoh: 85" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
-      </div>
-
-      <button onclick="simpanPenilaianTugasGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
-        Simpan Nilai & Tandai Selesai
-      </button>
-    </div>
-  `;
-
-  container.innerHTML = html;
 }
 
 // Simpan Penilaian oleh Guru
@@ -355,47 +316,87 @@ async function simpanAbsensiGuru() {
   alert(res.message);
 }
 
-function renderInputNilaiGuru(container) {
+// 1. RENDER INPUT NILAI (Satu Tampilan untuk Tugas, UH, UTS, UAS)
+async function renderInputNilaiGuru(container) {
+  const kelas = document.getElementById("guru-kelas-select").value;
+
+  // Loading state
+  container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Memuat daftar tugas dan ujian...</p>`;
+
+  // Ambil daftar tugas yang sudah dibuat guru untuk kelas ini
+  const resTugas = await callApi({ action: "getTasksByClass", kelas: kelas });
+  const daftarTugas = (resTugas.status === "success") ? resTugas.data : [];
+
   let html = `
-    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-pen-to-square text-emerald-600"></i> Input Nilai Ujian / UH</h3>
+    <h3 class="font-bold text-slate-700 text-sm mb-3">
+      <i class="fa-solid fa-pen-to-square text-emerald-600"></i> Input Nilai Kelas
+    </h3>
+    
     <div class="mb-4">
-      <label class="block text-xs font-bold text-slate-600 mb-1">Kategori Penilaian</label>
-      <select id="kategori-nilai" class="w-full px-3 py-2 border rounded-lg text-xs">
-        <option value="UH1">Ulangan Harian 1</option>
-        <option value="UH2">Ulangan Harian 2</option>
-        <option value="UTS">Ujian Tengah Semester</option>
-        <option value="UAS">Ujian Akhir Semester</option>
-      </select>
-    </div>
-    <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4">
+      <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Tugas / Kategori Penilaian</label>
+      <select id="kategori-nilai" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500">
+        <optgroup label="Tugas Yang Sudah Dibuat">
   `;
 
-  currentMuridList.forEach((m) => {
-    html += `
-      <div class="py-2 flex items-center justify-between gap-2">
-        <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${m.Nama_Lengkap}</span>
-        <input type="number" id="nilai-${m.ID_Murid}" placeholder="0-100" min="0" max="100" class="w-20 px-2 py-1 border rounded text-xs text-center">
-      </div>
-    `;
-  });
+  if (daftarTugas.length === 0) {
+    html += `<option value="" disabled>Belum ada tugas yang dibuat</option>`;
+  } else {
+    daftarTugas.forEach(t => {
+      // Menyiapkan value dengan prefix "Tugas: "
+      html += `<option value="Tugas: ${t.Judul_Tugas}">Tugas: ${t.Judul_Tugas}</option>`;
+    });
+  }
+
+  html += `
+        </optgroup>
+        <optgroup label="Penilaian Periodik (UH / Ujian)">
+          <option value="UH 1">Ulangan Harian 1</option>
+          <option value="UH 2">Ulangan Harian 2</option>
+          <option value="UTS">Ujian Tengah Semester</option>
+          <option value="UAS">Ujian Akhir Semester</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- DAFTAR MURID UNTUK INPUT NILAI MASSAL -->
+    <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
+  `;
+
+  if (currentMuridList.length === 0) {
+    html += `<p class="text-xs text-slate-400 py-4 text-center">Tidak ada data murid di kelas ini.</p>`;
+  } else {
+    currentMuridList.forEach((m) => {
+      html += `
+        <div class="py-2 px-1 flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${m.Nama_Lengkap}</span>
+          <input type="number" id="nilai-${m.ID_Murid}" placeholder="0-100" min="0" max="100" class="w-24 px-2 py-1.5 border rounded-lg text-xs text-center font-bold bg-white focus:ring-2 focus:ring-emerald-500">
+        </div>
+      `;
+    });
+  }
 
   html += `
     </div>
-    <button onclick="simpanNilaiGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow">
-      Simpan Nilai Kelas
+    <button onclick="simpanNilaiGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
+      Simpan Semua Nilai
     </button>
   `;
+
   container.innerHTML = html;
 }
 
+// 2. SIMPAN NILAI MASSAL DARI TAB INPUT NILAI
 async function simpanNilaiGuru() {
   const kategori = document.getElementById("kategori-nilai").value;
   const kelas = document.getElementById("guru-kelas-select").value;
 
+  if (!kategori) return alert("Pilih tugas atau kategori penilaian terlebih dahulu!");
+
+  // Ambil semua murid yang input nilainya diisi
   const dataNilai = currentMuridList
     .map((m) => {
       const val = document.getElementById(`nilai-${m.ID_Murid}`).value;
-      return val ? { idMurid: m.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
+      return val !== "" ? { idMurid: m.ID_Murid, kelas, kategori, nilai: Number(val) } : null;
     })
     .filter((item) => item !== null);
 
@@ -403,6 +404,14 @@ async function simpanNilaiGuru() {
 
   const res = await callApi({ action: "saveGrade", dataNilai });
   alert(res.message);
+
+  if (res.status === "success") {
+    // Reset form input angka
+    currentMuridList.forEach((m) => {
+      const el = document.getElementById(`nilai-${m.ID_Murid}`);
+      if (el) el.value = "";
+    });
+  }
 }
 
 function renderInputSikapGuru(container) {
