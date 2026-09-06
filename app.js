@@ -512,37 +512,49 @@ async function loadMateriMurid(container) {
 async function renderKumpulTugasMurid(container) {
   container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Memuat daftar tugas...</p>`;
 
-  // Ambil daftar tugas dari guru berdasarkan kelas murid
-  const res = await callApi({ action: "getTasksByClass", kelas: currentUser.kelas });
-  const daftarTugas = (res.status === "success") ? res.data : [];
+  // Ambil daftar tugas dari guru & riwayat nilai murid
+  const [resTugas, resStatus] = await Promise.all([
+    callApi({ action: "getTasksByClass", kelas: currentUser.kelas }),
+    callApi({ action: "getStudentTaskStatus", idMurid: currentUser.idMurid })
+  ]);
+
+  const daftarTugas = (resTugas.status === "success") ? resTugas.data : [];
+  const statusTugasMurid = (resStatus.status === "success") ? resStatus.data : [];
 
   let html = `
     <div class="space-y-6">
       <!-- BAGIAN 1: DAFTAR TUGAS DARI GURU -->
       <div>
-        <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-list-check text-blue-600"></i> Daftar Tugas Hari Ini</h3>
+        <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-list-check text-blue-600"></i> Daftar Tugas IPS</h3>
   `;
 
   if (daftarTugas.length === 0) {
-    html += `<p class="text-xs text-slate-400 p-3 bg-slate-50 rounded-lg text-center">Belum ada tugas yang diberikan oleh guru.</p>`;
+    html += `<p class="text-xs text-slate-400 p-3 bg-slate-50 rounded-lg text-center">Belum ada tugas dari guru.</p>`;
   } else {
     html += `<div class="space-y-3">`;
     daftarTugas.forEach(t => {
+      // Cek apakah tugas ini sudah dinilai guru
+      const riwayat = statusTugasMurid.find(s => s.Judul_Tugas === t.Judul_Tugas);
+      const isDone = !!riwayat;
+      const nilai = riwayat ? riwayat.Nilai : null;
+
       html += `
         <div class="p-3.5 border rounded-xl bg-slate-50 space-y-2">
           <div class="flex justify-between items-start">
             <span class="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">${t.Tipe_Tugas || 'Tugas'}</span>
-            <label class="flex items-center gap-1.5 cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded-lg transition-all">
-              <input type="checkbox" onchange="tandaiSelesaiTugas('${t.Judul_Tugas}', this)" class="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer">
-              <span class="text-[11px] font-bold">Selesai</span>
-            </label>
+            
+            <!-- CHECKBOX HANYA BACA (READ-ONLY) FOR MURID -->
+            <div class="flex items-center gap-1.5 ${isDone ? 'text-emerald-700 bg-emerald-50 border-emerald-300' : 'text-slate-500 bg-slate-100 border-slate-300'} border px-2.5 py-1 rounded-lg">
+              <input type="checkbox" ${isDone ? 'checked' : ''} disabled class="w-3.5 h-3.5 accent-emerald-600 cursor-not-allowed">
+              <span class="text-[11px] font-bold">${isDone ? `Selesai (Nilai: ${nilai})` : 'Belum Dinilai'}</span>
+            </div>
           </div>
+
           <h4 class="text-xs font-bold text-slate-800">${t.Judul_Tugas}</h4>
           
-          <!-- Tampilan Instruksi berdasarkan tipe -->
           <div class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200">
             ${t.Tipe_Tugas === 'Link/Google Form' 
-              ? `<p class="mb-1">Silakan kerjakan melalui link berikut:</p><a href="${t.Detail_Atau_Link}" target="_blank" class="text-blue-600 font-bold underline flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link / Form Tugas</a>`
+              ? `<a href="${t.Detail_Atau_Link}" target="_blank" class="text-blue-600 font-bold underline flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link / Form Tugas</a>`
               : `<p class="whitespace-pre-line">${t.Detail_Atau_Link}</p>`
             }
           </div>
@@ -554,10 +566,8 @@ async function renderKumpulTugasMurid(container) {
 
   html += `
       </div>
-
       <hr class="border-slate-200">
-
-      <!-- BAGIAN 2: FORM KIRIM TUGAS (UNGGAH FILE) -->
+      <!-- BAGIAN 2: FORM KIRIM TUGAS -->
       <div>
         <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-paper-plane text-blue-600"></i> Kirim Tugas (Link Drive / Foto)</h3>
         <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
@@ -580,29 +590,6 @@ async function renderKumpulTugasMurid(container) {
   container.innerHTML = html;
 }
 
-// Fungsi Centang Selesai Tugas
-async function tandaiSelesaiTugas(judulTugas, checkboxEl) {
-  if (!checkboxEl.checked) return;
-
-  const confirmDone = confirm(`Tandai tugas "${judulTugas}" sebagai selesai? Nilai akan otomatis masuk ke Rekap Nilai.`);
-  if (!confirmDone) {
-    checkboxEl.checked = false;
-    return;
-  }
-
-  checkboxEl.disabled = true;
-  const res = await callApi({
-    action: "markTaskDone",
-    idMurid: currentUser.idMurid,
-    kelas: currentUser.kelas,
-    judulTugas: judulTugas
-  });
-
-  alert(res.message);
-  // Reload dashboard murid agar status rekap nilai terbarui di memori
-  loadDashboardMurid();
-}
-
 async function kirimTugasMurid() {
   const dataTugas = {
     idMurid: currentUser.idMurid,
@@ -614,3 +601,67 @@ async function kirimTugasMurid() {
   const res = await callApi({ action: "submitTask", dataTugas });
   alert(res.message);
 }
+
+// Tambahkan modal/form kecil di bawah form buat tugas untuk memberi nilai tugas
+function renderPenilaianTugasGuru(container) {
+  let html = `
+    <hr class="my-5 border-slate-200">
+    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-check-double text-emerald-600"></i> Penilaian & Ceklis Tugas Murid</h3>
+    
+    <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Murid</label>
+        <select id="penilaian-id-murid" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+  `;
+
+  currentMuridList.forEach(m => {
+    html += `<option value="${m.ID_Murid}">${m.Nama_Lengkap}</option>`;
+  });
+
+  html += `
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas Yang Dinilai</label>
+        <input type="text" id="penilaian-judul-tugas" placeholder="Sesuai judul tugas yang diberikan" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">Nilai Tugas (0-100)</label>
+        <input type="number" id="penilaian-angka" min="0" max="100" placeholder="Contoh: 85" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+      </div>
+
+      <button onclick="simpanPenilaianTugasGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
+        Simpan Nilai & Tandai Selesai
+      </button>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', html);
+}
+
+// Panggil fungsi ini di akhir renderInputTugasGuru(container)
+// Tambahkan baris: renderPenilaianTugasGuru(container); di baris paling bawah renderInputTugasGuru()
+
+async function simpanPenilaianTugasGuru() {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const idMurid = document.getElementById("penilaian-id-murid").value;
+  const judulTugas = document.getElementById("penilaian-judul-tugas").value.trim();
+  const nilai = document.getElementById("penilaian-angka").value;
+
+  if (!judulTugas || !nilai) return alert("Lengkapi judul tugas dan nilainya!");
+
+  const res = await callApi({
+    action: "gradeTaskByTeacher",
+    kelas,
+    idMurid,
+    judulTugas,
+    nilai
+  });
+
+  alert(res.message);
+}
+
+
+
