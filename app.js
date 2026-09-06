@@ -270,7 +270,7 @@ async function simpanTugasGuru() {
 function renderAbsensiGuru(container) {
   let html = `
     <h3 class="font-bold text-slate-700 text-sm mb-3">
-      <i class="fa-solid fa-clipboard-user text-blue-600"></i> Absensi Kehadiran Siswa
+      <i class="fa-solid fa-clipboard-user text-blue-600"></i> Form Kehadiran Murid
     </h3>
     
     <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
