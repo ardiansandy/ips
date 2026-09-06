@@ -267,13 +267,30 @@ async function simpanTugasGuru() {
 }
 
 // 1. RENDER TAB ABSENSI GURU
+// 1. RENDER TAB ABSENSI GURU (LENGKAP: TANGGAL + HADIR SEMUA + DISPEN + FLEXIBLE NAME)
 function renderAbsensiGuru(container) {
+  // Mengambil tanggal hari ini format YYYY-MM-DD sebagai nilai default
+  const today = new Date().toISOString().split('T')[0];
+
   let html = `
     <h3 class="font-bold text-slate-700 text-sm mb-3">
-      <i class="fa-solid fa-clipboard-user text-blue-600"></i> Form Kehadiran Murid
+      <i class="fa-solid fa-clipboard-user text-blue-600"></i> Absensi Kehadiran Siswa
     </h3>
+
+    <!-- PANEL ATAS: INPUT TANGGAL & TOMBOL HADIR SEMUA -->
+    <div class="mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <label class="text-xs font-bold text-slate-600 shrink-0">Tanggal:</label>
+        <input type="date" id="absensi-tanggal" value="${today}" class="px-2 py-1 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <button onclick="setAllAttendance('Hadir')" class="px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border border-emerald-300 rounded-lg text-[11px] font-bold transition-all shrink-0">
+        <i class="fa-solid fa-check-double"></i> Hadir Semua
+      </button>
+    </div>
     
-    <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
+    <!-- DAFTAR MURID -->
+    <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
   `;
 
   if (currentMuridList.length === 0) {
@@ -282,11 +299,11 @@ function renderAbsensiGuru(container) {
     currentMuridList.forEach((m) => {
       html += `
         <div class="py-2 px-1 flex items-center justify-between gap-1.5">
-          <!-- Fleksibel memberikan ruang lebih banyak untuk nama murid -->
+          <!-- Nama fleksibel mengambil sisa ruang layar agar tidak terpotong di HP -->
           <span class="text-xs font-semibold text-slate-700 flex-1 pr-1 break-words leading-tight">${m.Nama_Lengkap}</span>
           
-          <!-- Dropdown Opsi Kehadiran (Termasuk Dispen) -->
-          <select id="absensi-${m.ID_Murid}" class="px-2 py-1 border rounded-lg text-xs bg-white font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 shrink-0">
+          <!-- Dropdown Keterangan (Hadir, Izin, Sakit, Dispen, Alpa) -->
+          <select id="absensi-${m.ID_Murid}" class="select-absensi-murid px-2 py-1 border rounded-lg text-xs bg-white font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 shrink-0">
             <option value="Hadir" selected>Hadir</option>
             <option value="Izin">Izin</option>
             <option value="Sakit">Sakit</option>
@@ -308,10 +325,20 @@ function renderAbsensiGuru(container) {
   container.innerHTML = html;
 }
 
-// 2. SIMPAN ABSENSI GURU
+// 2. FUNGSI PINTSAN: SET SEMUA MURID MENJADI HADIR
+function setAllAttendance(status) {
+  const selects = document.querySelectorAll('.select-absensi-murid');
+  selects.forEach(select => {
+    select.value = status;
+  });
+}
+
+// 3. SIMPAN ABSENSI GURU
 async function simpanAbsensiGuru() {
   const kelas = document.getElementById("guru-kelas-select").value;
+  const tanggal = document.getElementById("absensi-tanggal").value;
 
+  if (!tanggal) return alert("Pilih tanggal absensi terlebih dahulu!");
   if (currentMuridList.length === 0) return alert("Tidak ada data murid!");
 
   const dataAbsensi = currentMuridList.map((m) => {
@@ -319,7 +346,8 @@ async function simpanAbsensiGuru() {
     return {
       idMurid: m.ID_Murid,
       kelas: kelas,
-      status: status
+      status: status,
+      tanggal: tanggal
     };
   });
 
