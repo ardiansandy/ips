@@ -357,12 +357,13 @@ async function simpanAbsensiGuru() {
 
 // 1. RENDER INPUT NILAI (Satu Tampilan untuk Tugas, UH, UTS, UAS)
 // Render Tab Input Nilai Guru
+// RENDER INPUT NILAI GURU (Dinamis Murni dari Tab Buat Tugas)
 async function renderInputNilaiGuru(container) {
   const kelas = document.getElementById("guru-kelas-select").value;
 
-  container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Memuat daftar tugas dan ujian...</p>`;
+  container.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Memuat daftar tugas dan penilaian...</p>`;
 
-  // Ambil daftar tugas yang sudah dibuat
+  // Ambil daftar tugas yang sudah dibuat guru untuk kelas ini
   const resTugas = await callApi({ action: "getTasksByClass", kelas: kelas });
   const daftarTugas = (resTugas.status === "success") ? resTugas.data : [];
 
@@ -372,28 +373,21 @@ async function renderInputNilaiGuru(container) {
     </h3>
     
     <div class="mb-4">
-      <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Tugas / Kategori Penilaian</label>
+      <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Penilaian / Tugas</label>
       <select id="kategori-nilai" onchange="loadNilaiMuridByKategori()" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-emerald-500">
-        <option value="" disabled selected>-- Pilih Tugas / Kategori --</option>
-        <optgroup label="Tugas Yang Sudah Dibuat">
+        <option value="" disabled selected>-- Pilih Penilaian --</option>
   `;
 
   if (daftarTugas.length === 0) {
-    html += `<option value="" disabled>Belum ada tugas yang dibuat</option>`;
+    html += `<option value="" disabled>Belum ada tugas/penilaian yang dibuat</option>`;
   } else {
     daftarTugas.forEach(t => {
-      html += `<option value="Tugas: ${t.Judul_Tugas}">Tugas: ${t.Judul_Tugas}</option>`;
+      // Langsung mengambil Judul_Tugas tanpa teks "Tugas: "
+      html += `<option value="${t.Judul_Tugas}">${t.Judul_Tugas}</option>`;
     });
   }
 
   html += `
-        </optgroup>
-        <optgroup label="Penilaian Periodik (UH / Ujian)">
-          <option value="UH 1">Ulangan Harian 1</option>
-          <option value="UH 2">Ulangan Harian 2</option>
-          <option value="UTS">Ujian Tengah Semester</option>
-          <option value="UAS">Ujian Akhir Semester</option>
-        </optgroup>
       </select>
     </div>
 
@@ -408,7 +402,7 @@ async function renderInputNilaiGuru(container) {
       html += `
         <div class="py-2 px-1 flex items-center justify-between gap-2">
           <span class="text-xs font-semibold text-slate-700 w-1/2 truncate">${m.Nama_Lengkap}</span>
-          <input type="number" id="nilai-${m.ID_Murid}" placeholder="Belum ada" min="0" max="100" class="input-nilai-murid w-28 px-2 py-1.5 border rounded-lg text-xs text-center font-bold bg-white focus:ring-2 focus:ring-emerald-500">
+          <input type="number" id="nilai-${m.ID_Murid}" placeholder="Belum ada" min="0" max="100" class="w-28 px-2 py-1.5 border rounded-lg text-xs text-center font-bold bg-white focus:ring-2 focus:ring-emerald-500">
         </div>
       `;
     });
