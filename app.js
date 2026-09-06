@@ -266,27 +266,31 @@ async function simpanTugasGuru() {
   }
 }
 
+// 1. RENDER TAB ABSENSI GURU
 function renderAbsensiGuru(container) {
-  const today = new Date().toISOString().split("T")[0];
   let html = `
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="font-bold text-slate-700 text-sm"><i class="fa-solid fa-list-check text-blue-600"></i> Form Absensi Harian</h3>
-      <input type="date" id="absensi-tanggal" value="${today}" class="px-3 py-1 border rounded text-xs">
-    </div>
-    <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto mb-4">
+    <h3 class="font-bold text-slate-700 text-sm mb-3">
+      <i class="fa-solid fa-clipboard-user text-blue-600"></i> Absensi Kehadiran Siswa
+    </h3>
+    
+    <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto mb-4 bg-slate-50 p-2 rounded-xl border border-slate-200">
   `;
 
   if (currentMuridList.length === 0) {
-    html += `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data murid di kelas ini.</p>`;
+    html += `<p class="text-xs text-slate-400 py-4 text-center">Tidak ada data murid di kelas ini.</p>`;
   } else {
     currentMuridList.forEach((m) => {
       html += `
-        <div class="py-2.5 flex items-center justify-between gap-2">
-          <span class="text-xs font-semibold text-slate-700 w-1/3 truncate">${m.Nama_Lengkap}</span>
-          <select id="absen-${m.ID_Murid}" class="px-2 py-1 border rounded text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500">
+        <div class="py-2 px-1 flex items-center justify-between gap-1.5">
+          <!-- Fleksibel memberikan ruang lebih banyak untuk nama murid -->
+          <span class="text-xs font-semibold text-slate-700 flex-1 pr-1 break-words leading-tight">${m.Nama_Lengkap}</span>
+          
+          <!-- Dropdown Opsi Kehadiran (Termasuk Dispen) -->
+          <select id="absensi-${m.ID_Murid}" class="px-2 py-1 border rounded-lg text-xs bg-white font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 shrink-0">
             <option value="Hadir" selected>Hadir</option>
             <option value="Izin">Izin</option>
             <option value="Sakit">Sakit</option>
+            <option value="Dispen">Dispen</option>
             <option value="Alpa">Alpa</option>
           </select>
         </div>
@@ -297,19 +301,26 @@ function renderAbsensiGuru(container) {
   html += `
     </div>
     <button onclick="simpanAbsensiGuru()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
-      Simpan Absensi Kelas
+      Simpan Data Absensi
     </button>
   `;
+
   container.innerHTML = html;
 }
 
+// 2. SIMPAN ABSENSI GURU
 async function simpanAbsensiGuru() {
-  const tanggal = document.getElementById("absensi-tanggal").value;
   const kelas = document.getElementById("guru-kelas-select").value;
 
+  if (currentMuridList.length === 0) return alert("Tidak ada data murid!");
+
   const dataAbsensi = currentMuridList.map((m) => {
-    const status = document.getElementById(`absen-${m.ID_Murid}`).value;
-    return { tanggal, kelas, idMurid: m.ID_Murid, status };
+    const status = document.getElementById(`absensi-${m.ID_Murid}`).value;
+    return {
+      idMurid: m.ID_Murid,
+      kelas: kelas,
+      status: status
+    };
   });
 
   const res = await callApi({ action: "saveAttendance", dataAbsensi });
