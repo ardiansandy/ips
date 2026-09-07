@@ -738,7 +738,7 @@ async function renderKumpulTugasMurid(container) {
               ? `
                 <div>
                   <a href="${urlLink}" target="_blank" class="inline-flex items-center gap-1 text-blue-600 font-bold underline mb-1">
-                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link / Form Tugas
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link Tugas
                   </a>
                   ${deskripsiTugas ? `<p class="whitespace-pre-line text-slate-600 mt-1 pt-1 border-t border-slate-100">${deskripsiTugas}</p>` : ''}
                 </div>
@@ -757,7 +757,7 @@ async function renderKumpulTugasMurid(container) {
       <hr class="border-slate-200">
       <!-- BAGIAN 2: FORM KIRIM TUGAS -->
       <div>
-        <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-paper-plane text-blue-600"></i> Kirim Tugas (Link Drive / Foto)</h3>
+        <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-paper-plane text-blue-600"></i> Kirim Tugas (Link Drive / URL)</h3>
         <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Judul Tugas</label>
@@ -777,7 +777,7 @@ async function renderKumpulTugasMurid(container) {
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Link File (Google Drive / Youtube / Foto)</label>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Link File (Google Drive / Youtube / Medsos)</label>
             <input type="text" id="tugas-link" placeholder="Paste link di sini..." class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
           </div>
           <button onclick="kirimTugasMurid()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs shadow transition-all">
