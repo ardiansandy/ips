@@ -209,6 +209,36 @@
 
   </div>
 
+  <!-- ================= POPUP MODAL DAFTAR & EDIT TUGAS GURU ================= -->
+  <div id="modal-kelola-tugas" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden border border-slate-300">
+      
+      <!-- Header Pop-Up Minimalis -->
+      <div class="bg-slate-800 text-white px-4 py-2.5 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-400 text-sm"></i>
+          <h3 class="font-bold text-xs tracking-wide">Daftar & Kelola Tugas Guru</h3>
+        </div>
+        <button onclick="closeModalTugasGuru()" class="text-slate-300 hover:text-white text-base leading-none p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Konten Daftar / Form Edit Tugas (Scrollable) -->
+      <div id="modal-tugas-content" class="p-3 overflow-y-auto space-y-2.5 flex-1 bg-slate-50 text-xs">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+      <!-- Footer Modal -->
+      <div class="p-2.5 bg-slate-100 border-t border-slate-200 text-right shrink-0">
+        <button onclick="closeModalTugasGuru()" class="px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-[11px] font-semibold transition-all">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Include App Logic JS -->
   <script src="app.js"></script>
 </body>
