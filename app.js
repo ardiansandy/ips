@@ -101,6 +101,17 @@ function logout() {
   location.reload();
 }
 
+// Contoh saat login di Web Utama berhasil:
+function onLoginSuccess(dataMurid) {
+  // --- TAMBAHKAN 3 BARIS INI ---
+  localStorage.setItem("userIPS_nama", dataMurid.nama);
+  localStorage.setItem("userIPS_kelas", dataMurid.kelas);
+  localStorage.setItem("userIPS_id", dataMurid.idMurid);
+  // -----------------------------
+
+  // Lanjutkan alur aplikasi seperti biasa...
+}
+
 function renderDashboard() {
   document.getElementById("login-section").classList.add("hidden");
   document.getElementById("app-dashboard").classList.remove("hidden");
@@ -777,13 +788,6 @@ async function kirimTugasMurid() {
   const res = await callApi({ action: "submitTask", dataTugas });
   alert(res.message);
 }
-
-// Jalankan ini saat login di Web Utama BERHASIL
-function onLoginSukses(dataMurid) {
-  // Simpan data ke memori browser
-  localStorage.setItem("userIPS_nama", dataMurid.nama);
-  localStorage.setItem("userIPS_kelas", dataMurid.kelas);
-  localStorage.setItem("userIPS_id", dataMurid.idMurid);
 
   // Arahkan atau tampilkan tombol ke Web Lembar Jawaban
 }
