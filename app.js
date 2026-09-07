@@ -789,7 +789,3 @@ async function kirimTugasMurid() {
   alert(res.message);
 }
 
-  // Arahkan atau tampilkan tombol ke Web Lembar Jawaban
-}
-
-
