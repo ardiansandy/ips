@@ -188,6 +188,12 @@ function renderInputTugasGuru(container) {
         </select>
       </div>
 
+      <!-- KOLOM KHUSUS PASTE LINK (Default tersembunyi/hidden) -->
+      <div id="container-guru-link" class="hidden">
+        <label class="block text-xs font-bold text-slate-600 mb-1">Link Website / Google Form</label>
+        <input type="text" id="guru-tugas-link" placeholder="https://forms.google.com/..." class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+      </div>
+
       <div>
         <label id="label-detail-tugas" class="block text-xs font-bold text-slate-600 mb-1">Detail / Petunjuk Tugas</label>
         <textarea id="guru-tugas-detail" rows="3" placeholder="Contoh: Kerjakan buku mari berlatih halaman 23 nomor 1-5" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"></textarea>
@@ -229,17 +235,21 @@ async function simpanPenilaianTugasGuru() {
 // Menyesuaikan placeholder/label berdasarkan tipe tugas
 function toggleFormDetailTugas() {
   const tipe = document.getElementById("guru-tugas-tipe").value;
-  const label = document.getElementById("label-detail-tugas");
+  const containerLink = document.getElementById("container-guru-link");
+  const labelDetail = document.getElementById("label-detail-tugas");
   const inputDetail = document.getElementById("guru-tugas-detail");
 
   if (tipe === "Link/Google Form") {
-    label.innerText = "Link Google Form / Website Tugas";
-    inputDetail.placeholder = "https://forms.google.com/... atau link luar lainnya";
+    containerLink.classList.remove("hidden");
+    labelDetail.innerText = "Detail / Petunjuk Tugas";
+    inputDetail.placeholder = "Contoh: Silakan buka link di atas lalu kerjakan kuisnya sampai selesai.";
   } else if (tipe === "Pengumpulan File") {
-    label.innerText = "Instruksi Pengumpulan File";
+    containerLink.classList.add("hidden");
+    labelDetail.innerText = "Instruksi Pengumpulan File";
     inputDetail.placeholder = "Contoh: Buat penjelasan materi perubahan sosial dalam bentuk video lalu unggah linknya di tombol Kirim Tugas di bawah.";
   } else {
-    label.innerText = "Detail / Petunjuk Tugas";
+    containerLink.classList.add("hidden");
+    labelDetail.innerText = "Detail / Petunjuk Tugas";
     inputDetail.placeholder = "Contoh: Kerjakan buku mari berlatih halaman 23 materi perubahan sosial.";
   }
 }
@@ -247,15 +257,31 @@ function toggleFormDetailTugas() {
 // Simpan data tugas ke Apps Script
 async function simpanTugasGuru() {
   const kelas = document.getElementById("guru-kelas-select").value;
+  const tipeTugas = document.getElementById("guru-tugas-tipe").value;
+  const judulTugas = document.getElementById("guru-tugas-judul").value.trim();
+  const detailTugas = document.getElementById("guru-tugas-detail").value.trim();
+  const linkTugas = document.getElementById("guru-tugas-link") ? document.getElementById("guru-tugas-link").value.trim() : "";
+
+  if (!judulTugas) return alert("Judul tugas wajib diisi!");
+
+  // Gabungkan Link dan Detail jika tipenya Link/Google Form
+  let payloadDetail = detailTugas;
+  if (tipeTugas === "Link/Google Form") {
+    if (!linkTugas) return alert("Link Website / Google Form wajib diisi!");
+    payloadDetail = JSON.stringify({
+      link: linkTugas,
+      deskripsi: detailTugas
+    });
+  } else {
+    if (!detailTugas) return alert("Detail / Petunjuk tugas wajib diisi!");
+  }
+
   const dataTugas = {
     kelas: kelas,
-    judulTugas: document.getElementById("guru-tugas-judul").value.trim(),
-    tipeTugas: document.getElementById("guru-tugas-tipe").value,
-    detailAtauLink: document.getElementById("guru-tugas-detail").value.trim()
+    judulTugas: judulTugas,
+    tipeTugas: tipeTugas,
+    detailAtauLink: payloadDetail
   };
-
-  if (!dataTugas.judulTugas) return alert("Judul tugas wajib diisi!");
-  if (!dataTugas.detailAtauLink) return alert("Detail atau link tugas wajib diisi!");
 
   const res = await callApi({ action: "addTask", dataTugas });
   alert(res.message);
@@ -263,10 +289,12 @@ async function simpanTugasGuru() {
   if (res.status === "success") {
     document.getElementById("guru-tugas-judul").value = "";
     document.getElementById("guru-tugas-detail").value = "";
+    if (document.getElementById("guru-tugas-link")) {
+      document.getElementById("guru-tugas-link").value = "";
+    }
   }
 }
 
-// 1. RENDER TAB ABSENSI GURU
 // 1. RENDER TAB ABSENSI GURU (LENGKAP: TANGGAL + HADIR SEMUA + DISPEN + FLEXIBLE NAME)
 function renderAbsensiGuru(container) {
   // Mengambil tanggal hari ini format YYYY-MM-DD sebagai nilai default
@@ -673,6 +701,22 @@ async function renderKumpulTugasMurid(container) {
       const isDone = !!riwayat;
       const nilai = riwayat ? riwayat.Nilai : null;
 
+      // Parsing data link & deskripsi untuk tipe Link/Google Form
+      let urlLink = "";
+      let deskripsiTugas = t.Detail_Atau_Link;
+
+      if (t.Tipe_Tugas === 'Link/Google Form') {
+        try {
+          const parsed = JSON.parse(t.Detail_Atau_Link);
+          urlLink = parsed.link || "";
+          deskripsiTugas = parsed.deskripsi || "";
+        } catch(e) {
+          // Fallback jika data lama berbentuk URL biasa
+          urlLink = t.Detail_Atau_Link;
+          deskripsiTugas = "";
+        }
+      }
+
       html += `
         <div class="p-3.5 border rounded-xl bg-slate-50 space-y-2">
           <div class="flex justify-between items-start">
@@ -687,10 +731,17 @@ async function renderKumpulTugasMurid(container) {
 
           <h4 class="text-xs font-bold text-slate-800">${t.Judul_Tugas}</h4>
           
-          <div class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200">
+          <div class="text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 space-y-2">
             ${t.Tipe_Tugas === 'Link/Google Form' 
-              ? `<a href="${t.Detail_Atau_Link}" target="_blank" class="text-blue-600 font-bold underline flex items-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link / Form Tugas</a>`
-              : `<p class="whitespace-pre-line">${t.Detail_Atau_Link}</p>`
+              ? `
+                <div>
+                  <a href="${urlLink}" target="_blank" class="inline-flex items-center gap-1 text-blue-600 font-bold underline mb-1">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Link / Form Tugas
+                  </a>
+                  ${deskripsiTugas ? `<p class="whitespace-pre-line text-slate-600 mt-1 pt-1 border-t border-slate-100">${deskripsiTugas}</p>` : ''}
+                </div>
+                `
+              : `<p class="whitespace-pre-line">${deskripsiTugas}</p>`
             }
           </div>
         </div>
