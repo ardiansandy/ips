@@ -688,7 +688,7 @@ async function renderKumpulTugasMurid(container) {
     <div class="space-y-6">
       <!-- BAGIAN 1: DAFTAR TUGAS DARI GURU -->
       <div>
-        <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-list-check text-blue-600"></i> Daftar Tugas IPS</h3>
+        <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-list-check text-indigo-600"></i> Daftar Tugas IPS</h3>
   `;
 
   if (daftarTugas.length === 0) {
@@ -711,7 +711,6 @@ async function renderKumpulTugasMurid(container) {
           urlLink = parsed.link || "";
           deskripsiTugas = parsed.deskripsi || "";
         } catch(e) {
-          // Fallback jika data lama berbentuk URL biasa
           urlLink = t.Detail_Atau_Link;
           deskripsiTugas = "";
         }
@@ -758,8 +757,21 @@ async function renderKumpulTugasMurid(container) {
         <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-paper-plane text-blue-600"></i> Kirim Tugas (Link Drive / Foto)</h3>
         <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas</label>
-            <input type="text" id="tugas-judul" placeholder="Contoh: Tugas Video Perubahan Sosial" class="w-full px-3 py-2 border rounded-lg text-xs bg-white">
+            <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Judul Tugas</label>
+            <select id="tugas-judul" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500">
+              <option value="" disabled selected>-- Pilih Tugas yang Akan Dikirim --</option>
+  `;
+
+  if (daftarTugas.length === 0) {
+    html += `<option value="" disabled>Belum ada daftar tugas dari guru</option>`;
+  } else {
+    daftarTugas.forEach(t => {
+      html += `<option value="${t.Judul_Tugas}">${t.Judul_Tugas}</option>`;
+    });
+  }
+
+  html += `
+            </select>
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">Link File (Google Drive / Youtube / Foto)</label>
