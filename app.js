@@ -684,6 +684,9 @@ async function renderKumpulTugasMurid(container) {
   const daftarTugas = (resTugas.status === "success") ? resTugas.data : [];
   const statusTugasMurid = (resStatus.status === "success") ? resStatus.data : [];
 
+  // Filter khusus tugas bertipe "Pengumpulan File" untuk dropdown kirim tugas
+  const tugasPengumpulanFile = daftarTugas.filter(t => t.Tipe_Tugas === "Pengumpulan File");
+
   let html = `
     <div class="space-y-6">
       <!-- BAGIAN 1: DAFTAR TUGAS DARI GURU -->
@@ -759,13 +762,13 @@ async function renderKumpulTugasMurid(container) {
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Judul Tugas</label>
             <select id="tugas-judul" class="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500">
-              <option value="" disabled selected>-- Pilih Tugas yang Akan Dikirim --</option>
+              <option value="" disabled selected>-- Pilih Tugas Pengumpulan File --</option>
   `;
 
-  if (daftarTugas.length === 0) {
-    html += `<option value="" disabled>Belum ada daftar tugas dari guru</option>`;
+  if (tugasPengumpulanFile.length === 0) {
+    html += `<option value="" disabled>Tidak ada tugas pengumpulan file yang tersedia</option>`;
   } else {
-    daftarTugas.forEach(t => {
+    tugasPengumpulanFile.forEach(t => {
       html += `<option value="${t.Judul_Tugas}">${t.Judul_Tugas}</option>`;
     });
   }
