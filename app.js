@@ -170,9 +170,15 @@ function switchGuruTab(tab) {
 
 function renderInputTugasGuru(container) {
   container.innerHTML = `
-    <h3 class="font-bold text-slate-700 text-sm mb-3">
-      <i class="fa-solid fa-square-plus text-indigo-600"></i> Buat Tugas Baru untuk Murid
-    </h3>
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold text-slate-700 text-sm">
+        <i class="fa-solid fa-square-plus text-indigo-600"></i> Buat Tugas Baru untuk Murid
+      </h3>
+      <button onclick="bukaModalTugasGuru()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold shadow flex items-center gap-1.5 transition-all">
+        <i class="fa-solid fa-folder-open text-amber-400"></i> Kelola Tugas Saya
+      </button>
+    </div>
+
     <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1">Judul Tugas</label>
@@ -803,4 +809,203 @@ async function kirimTugasMurid() {
   alert(res.message);
 }
 
+
+let currentTugasGuruList = [];
+
+// Buka Pop-Up Modal & Ambil Data Tugas
+async function bukaModalTugasGuru() {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const modal = document.getElementById("modal-kelola-tugas");
+  const content = document.getElementById("modal-tugas-content");
+
+  modal.classList.remove("hidden");
+  content.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center">Memuat daftar tugas kelas ${kelas.toUpperCase()}...</p>`;
+
+  const res = await callApi({ action: "getTasksByClass", kelas: kelas });
+  if (res.status === "success") {
+    currentTugasGuruList = res.data;
+    renderDaftarTugasModal();
+  } else {
+    content.innerHTML = `<p class="text-xs text-red-500 py-4 text-center">Gagal memuat data tugas!</p>`;
+  }
+}
+
+function closeModalTugasGuru() {
+  document.getElementById("modal-kelola-tugas").classList.add("hidden");
+}
+
+// Render Tampilan List Tugas Ramping & Minimalis
+function renderDaftarTugasModal() {
+  const content = document.getElementById("modal-tugas-content");
+  const kelas = document.getElementById("guru-kelas-select").value;
+
+  if (currentTugasGuruList.length === 0) {
+    content.innerHTML = `<p class="text-xs text-slate-400 py-8 text-center">Belum ada tugas yang dibuat untuk kelas ${kelas.toUpperCase()}.</p>`;
+    return;
+  }
+
+  let html = `<div class="space-y-2">`;
+  currentTugasGuruList.forEach((t) => {
+    let urlLink = "";
+    let deskripsiText = t.Detail_Atau_Link;
+
+    if (t.Tipe_Tugas === 'Link/Google Form') {
+      try {
+        const parsed = JSON.parse(t.Detail_Atau_Link);
+        urlLink = parsed.link || "";
+        deskripsiText = parsed.deskripsi || "";
+      } catch(e) {
+        urlLink = t.Detail_Atau_Link;
+        deskripsiText = "";
+      }
+    }
+
+    html += `
+      <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1.5 text-xs">
+        <div class="flex justify-between items-start gap-2">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 shrink-0">${t.Tipe_Tugas || 'Tugas'}</span>
+            <h4 class="font-bold text-slate-800 leading-tight">${t.Judul_Tugas}</h4>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button onclick="bukaFormEditTugasModal('${t.ID_Tugas}')" class="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-semibold text-[11px] transition-all">
+              <i class="fa-solid fa-pen"></i> Edit
+            </button>
+            <button onclick="hapusTugasGuru('${t.ID_Tugas}')" class="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 rounded font-semibold text-[11px] transition-all">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-2 rounded border border-slate-100 text-[11px] text-slate-600 space-y-1">
+          ${urlLink ? `<p><span class="font-bold text-slate-700">Link:</span> <a href="${urlLink}" target="_blank" class="text-blue-600 underline break-all">${urlLink}</a></p>` : ''}
+          ${deskripsiText ? `<p class="whitespace-pre-line leading-relaxed"><span class="font-bold text-slate-700">Detail:</span> ${deskripsiText}</p>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+
+  content.innerHTML = html;
+}
+
+// Render Form Edit Tugas Dalam Modal
+function bukaFormEditTugasModal(idTugas) {
+  const item = currentTugasGuruList.find(t => String(t.ID_Tugas) === String(idTugas));
+  if (!item) return;
+
+  let urlLink = "";
+  let deskripsiText = item.Detail_Atau_Link;
+
+  if (item.Tipe_Tugas === 'Link/Google Form') {
+    try {
+      const parsed = JSON.parse(item.Detail_Atau_Link);
+      urlLink = parsed.link || "";
+      deskripsiText = parsed.deskripsi || "";
+    } catch(e) {
+      urlLink = item.Detail_Atau_Link;
+      deskripsiText = "";
+    }
+  }
+
+  const content = document.getElementById("modal-tugas-content");
+  content.innerHTML = `
+    <div class="bg-white p-3 rounded-lg border border-slate-300 space-y-2.5">
+      <div class="flex justify-between items-center pb-2 border-b">
+        <span class="font-bold text-slate-700 text-xs"><i class="fa-solid fa-pen-to-square text-amber-500"></i> Edit Tugas</span>
+        <button onclick="renderDaftarTugasModal()" class="text-slate-500 hover:text-slate-800 text-xs font-semibold">
+          &larr; Batal / Kembali
+        </button>
+      </div>
+
+      <input type="hidden" id="edit-tugas-id" value="${item.ID_Tugas}">
+
+      <div>
+        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Judul Tugas</label>
+        <input type="text" id="edit-tugas-judul" value="${item.Judul_Tugas}" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-slate-50">
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Tipe Tugas</label>
+        <select id="edit-tugas-tipe" onchange="toggleFormEditTugasLink()" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-slate-50">
+          <option value="Petunjuk Teks" ${item.Tipe_Tugas === 'Petunjuk Teks' ? 'selected' : ''}>Petunjuk Teks / Pengerjaan Buku</option>
+          <option value="Link/Google Form" ${item.Tipe_Tugas === 'Link/Google Form' ? 'selected' : ''}>Link Website / Google Form</option>
+          <option value="Pengumpulan File" ${item.Tipe_Tugas === 'Pengumpulan File' ? 'selected' : ''}>Pengumpulan File (Video / Drive / Foto)</option>
+        </select>
+      </div>
+
+      <div id="container-edit-link" class="${item.Tipe_Tugas === 'Link/Google Form' ? '' : 'hidden'}">
+        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Link Website / Google Form</label>
+        <input type="text" id="edit-tugas-link" value="${urlLink}" placeholder="https://..." class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-slate-50">
+      </div>
+
+      <div>
+        <label class="block text-[11px] font-bold text-slate-600 mb-0.5">Detail / Petunjuk Tugas</label>
+        <textarea id="edit-tugas-detail" rows="4" class="w-full px-2.5 py-1.5 border rounded-lg text-xs bg-slate-50 focus:ring-1 focus:ring-blue-500 font-sans leading-relaxed">${deskripsiText}</textarea>
+      </div>
+
+      <button onclick="simpanEditTugasGuru()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 rounded-lg text-xs shadow transition-all">
+        Simpan Perubahan
+      </button>
+    </div>
+  `;
+}
+
+function toggleFormEditTugasLink() {
+  const tipe = document.getElementById("edit-tugas-tipe").value;
+  const container = document.getElementById("container-edit-link");
+  if (tipe === "Link/Google Form") {
+    container.classList.remove("hidden");
+  } else {
+    container.classList.add("hidden");
+  }
+}
+
+// Simpan Update Tugas ke Backend
+async function simpanEditTugasGuru() {
+  const kelas = document.getElementById("guru-kelas-select").value;
+  const idTugas = document.getElementById("edit-tugas-id").value;
+  const judulTugas = document.getElementById("edit-tugas-judul").value.trim();
+  const tipeTugas = document.getElementById("edit-tugas-tipe").value;
+  const detailTugas = document.getElementById("edit-tugas-detail").value.trim();
+  const linkTugas = document.getElementById("edit-tugas-link") ? document.getElementById("edit-tugas-link").value.trim() : "";
+
+  if (!judulTugas) return alert("Judul tugas wajib diisi!");
+
+  let payloadDetail = detailTugas;
+  if (tipeTugas === "Link/Google Form") {
+    if (!linkTugas) return alert("Link Website / Google Form wajib diisi!");
+    payloadDetail = JSON.stringify({
+      link: linkTugas,
+      deskripsi: detailTugas
+    });
+  }
+
+  const dataTugas = {
+    idTugas: idTugas,
+    kelas: kelas,
+    judulTugas: judulTugas,
+    tipeTugas: tipeTugas,
+    detailAtauLink: payloadDetail
+  };
+
+  const res = await callApi({ action: "updateTask", dataTugas });
+  alert(res.message);
+
+  if (res.status === "success") {
+    bukaModalTugasGuru(); // Reload list tugas modal
+  }
+}
+
+// Hapus Tugas
+async function hapusTugasGuru(idTugas) {
+  if (!confirm("Apakah Anda yakin ingin menghapus tugas ini?")) return;
+
+  const res = await callApi({ action: "deleteTask", idTugas: idTugas });
+  alert(res.message);
+
+  if (res.status === "success") {
+    bukaModalTugasGuru(); // Reload list tugas modal
+  }
+}
 
