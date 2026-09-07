@@ -148,7 +148,7 @@ function switchGuruTab(tab) {
     tugas: document.getElementById("btn-guru-tugas")
   };
 
-  const activeStyle = "guru-nav-btn p-3 bg-blue-600 text-white rounded-xl text-xs font-semibold text-center shadow transition-all";
+  const activeStyle = "guru-nav-btn p-3 bg-sky-500 text-white rounded-xl text-xs font-semibold text-center shadow transition-all";
   const inactiveStyle = "guru-nav-btn p-3 bg-white text-slate-700 rounded-xl text-xs font-semibold text-center border shadow-sm hover:bg-slate-50 transition-all";
 
   Object.keys(guruTabs).forEach(key => {
