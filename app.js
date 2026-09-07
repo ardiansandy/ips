@@ -171,7 +171,7 @@ function switchGuruTab(tab) {
 function renderInputTugasGuru(container) {
   container.innerHTML = `
     <h3 class="font-bold text-slate-700 text-sm mb-3">
-      <i class="fa-solid fa-square-plus text-blue-600"></i> Buat Tugas Baru untuk Murid
+      <i class="fa-solid fa-square-plus text-indigo-600"></i> Buat Tugas Baru untuk Murid
     </h3>
     <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
       <div>
