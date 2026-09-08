@@ -1,5 +1,5 @@
 // ⚠️ GANTI DENGAN URL WEB APP DEPLOYMENT DARI APPS SCRIPT
-const API_URL = "https://script.google.com/macros/s/AKfycbxgGw8hM2_rjKmu5Xs71Yu9bu2xaUfuZt31jTf8S1ZXg2F1PxO2RJbCh3xSH4OUte8Zpg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwpN-EUHhfWcqTqPs8vvdFtJpb54VNhVRGlu2DNc69r16R0MU_aGGD0W3Vm2bsPhxR3yQ/exec";
 
 let currentUser = null;
 let currentMuridList = [];
